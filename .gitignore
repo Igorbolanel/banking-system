@@ -2,3 +2,8 @@
 .vscode/
 .idea/
 .vault_pass
+node_modules
+dist
+.DS_Store
+.vscode
+.idea
