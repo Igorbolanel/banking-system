@@ -1,0 +1,76 @@
+---
+- name: Базовая настройка сервера
+  hosts: banking_server
+  become: true
+
+  collections:
+    - community.general
+
+  tasks:
+    - name: Обновление кэша
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Обновление пакетов
+      apt:
+        upgrade: dist
+
+    - name: Установка базовых утилит
+      apt:
+        name:
+          - curl
+          - git
+          - ufw
+          - htop
+          - ca-certificates
+        state: present
+
+    - name: Скачивание скрипта Docker
+      get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: "0700"
+
+    - name: Запуск установки Docker
+      command: /tmp/get-docker.sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Добавление пользователя в группу docker
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Запуск службы Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Политика UFW для входящих соединений
+      community.general.ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Политика UFW для исходящих соединений
+      community.general.ufw:
+        direction: outgoing
+        policy: allow
+
+    - name: Разрешение портов
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+      loop:
+        - { port: "22", proto: "tcp" }
+        - { port: "80", proto: "tcp" }
+        - { port: "443", proto: "tcp" }
+      loop_control:
+        label: "{{ item.port }}"
+
+    - name: Включение UFW
+      community.general.ufw:
+        state: enabled
