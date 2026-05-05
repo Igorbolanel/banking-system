@@ -3,7 +3,7 @@ import './App.css';
 function App() {
   const mainAccount = {
     name: 'Основной счёт',
-    balance: 0.00,
+    balance: 152340.5,
     currency: '₽',
   };
 
@@ -12,14 +12,14 @@ function App() {
       id: 'card-1',
       name: 'Дебетовая карта',
       maskedNumber: '**** 1234',
-      balance: 228,
+      balance: 82340.12,
       currency: '₽',
     },
     {
       id: 'card-2',
       name: 'Кредитная карта',
       maskedNumber: '**** 5678',
-      balance: -1337,
+      balance: -12450,
       currency: '₽',
     },
   ];
@@ -54,22 +54,4 @@ function App() {
           <button className="sidebar__nav-item sidebar__nav-item--active">Главная</button>
           <button className="sidebar__nav-item">Счета</button>
           <button className="sidebar__nav-item">Карты</button>
-          <button className="sidebar__nav-item">Платежи</button>
-          <button className="sidebar__nav-item">Валюта</button>
-          <button className="sidebar__nav-item">Профиль</button>
-        </nav>
-      </aside>
-
-      <div className="main">
-        <header className="header">
-          <div className="header__title">Интернет‑банк</div>
-          <div className="header__user">Иван Иванов</div>
-        </header>
-
-        <main className="content">
-          <div className="content__row">
-            <section className="card card--main">
-              <h2 className="card__title">Основной счёт</h2>
-              <div className="balance">
-                <div className="balance__value">
-                  {mainAccount.balance.toLocaleStri
+          <bu
