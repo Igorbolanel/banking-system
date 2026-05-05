@@ -71,6 +71,7 @@
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 14px;
+  cursor: pointer;
 }
 
 .sidebar__nav-item--active {
@@ -169,6 +170,7 @@
   color: #000;
   font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .cards-list {
@@ -223,6 +225,36 @@
 .transaction__amount--pos {
   color: #4caf50;
 }
+
+/* Модальное окно для действий (пополнить/перевести/оплатить) */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal__content {
+  position: relative;
+  z-index: 60;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  min-width: 320px;
+  max-width: 420px;
+  color: var(--color-text);
+}
+
+/* Адаптивность */
 
 @media (max-width: 960px) {
   .app {
