@@ -1,13 +1,154 @@
 import { useState, type FormEvent } from 'react';
 import type { Account, Action } from '../types/banking';
 import { formatMoney } from '../utils/formatters';
-interface ActionModalProps { action: Action | null; accounts: Account[]; onClose: () => void; onSubmit: (action: Action, payload: Record<string, string | number>) => void }
-const titleMap: Record<Action, string> = { topup: 'Пополнение счёта', transfer: 'Перевод средств', pay: 'Оплата услуг', exchange: 'Обмен валюты', openAccount: 'Открытие счёта' };
+
+interface ActionModalProps {
+  action: Action | null;
+  accounts: Account[];
+  onClose: () => void;
+  onSubmit: (action: Action, payload: Record<string, string | number>) => void;
+}
+
+const titleMap: Record<Action, string> = {
+  topup: 'Пополнение счёта',
+  transfer: 'Перевод средств',
+  pay: 'Оплата услуг',
+  exchange: 'Обмен валюты',
+  openAccount: 'Открытие счёта',
+};
+
 function ActionModal({ action, accounts, onClose, onSubmit }: ActionModalProps) {
   const [submitted, setSubmitted] = useState(false);
+
   if (!action) return null;
+
   const activeAccounts = accounts.filter((account) => account.status === 'active');
-  function handleSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!action) return; const formData = new FormData(event.currentTarget); const payload: Record<string, string | number> = {}; formData.forEach((value, key) => { payload[key] = value.toString(); }); onSubmit(action, payload); setSubmitted(true); }
-  return <div className="modal" role="dialog" aria-modal="true"><button className="modal__backdrop" type="button" onClick={onClose} aria-label="Закрыть" /><section className="modal__content"><div className="modal__head"><h2>{titleMap[action]}</h2><button type="button" onClick={onClose}>×</button></div>{submitted ? <div className="success-state"><span className="success-state__icon">✓</span><strong>Операция обработана</strong><p>Данные обновлены локально. После подключения backend действие будет отправляться в сервис.</p><button type="button" onClick={onClose}>Готово</button></div> : <form className="form" onSubmit={handleSubmit}>{action !== 'openAccount' && <label>Счёт<select name="accountId" required>{activeAccounts.map((account) => <option key={account.id} value={account.id}>{account.name} — {formatMoney(account.balance, account.currency)}</option>)}</select></label>}{action === 'transfer' && <label>Номер счёта получателя<input name="toAccountNumber" placeholder="40817810000000000000" required /></label>}{action === 'pay' && <label>Получатель<input name="title" placeholder="Мобильная связь, ЖКХ, интернет" required /></label>}{action === 'exchange' && <div className="form__grid"><label>Получить валюту<select name="toCurrency" defaultValue="USD"><option value="USD">USD</option><option value="EUR">EUR</option><option value="CNY">CNY</option></select></label><label>Назначение<input name="note" placeholder="Например, поездка" /></label></div>}{action === 'openAccount' && <><label>Название счёта<input name="name" placeholder="Например, счёт для поездки" required /></label><div className="form__grid"><label>Валюта<select name="currency" defaultValue="RUB"><option value="RUB">RUB</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="CNY">CNY</option></select></label><label>Тип<select name="type" defaultValue="debit"><option value="debit">Обычный</option><option value="saving">Накопительный</option></select></label></div></>}{action !== 'openAccount' && <label>Сумма<input min="1" name="amount" placeholder="0" required type="number" /></label>}<button className="button-primary" type="submit">Продолжить</button></form>}</section></div>;
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!action) return;
+
+    const formData = new FormData(event.currentTarget);
+    const payload: Record<string, string | number> = {};
+
+    formData.forEach((value, key) => {
+      payload[key] = value.toString();
+    });
+
+    onSubmit(action, payload);
+    setSubmitted(true);
+  }
+
+  return (
+    <div className="modal" role="dialog" aria-modal="true">
+      <button className="modal__backdrop" type="button" onClick={onClose} aria-label="Закрыть" />
+
+      <section className="modal__content">
+        <div className="modal__head">
+          <h2>{titleMap[action]}</h2>
+          <button type="button" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        {submitted ? (
+          <div className="success-state">
+            <span className="success-state__icon">✓</span>
+            <strong>Операция обработана</strong>
+            <p>Данные обновлены локально. После подключения backend действие будет отправляться в сервис.</p>
+            <button type="button" onClick={onClose}>
+              Готово
+            </button>
+          </div>
+        ) : (
+          <form className="form" onSubmit={handleSubmit}>
+            {action !== 'openAccount' && (
+              <label>
+                Счёт
+                <select name="accountId" required>
+                  {activeAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} — {formatMoney(account.balance, account.currency)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {action === 'transfer' && (
+              <label>
+                Номер счёта получателя
+                <input name="toAccountNumber" placeholder="40817810000000000000" required />
+              </label>
+            )}
+
+            {action === 'pay' && (
+              <label>
+                Получатель
+                <input name="title" placeholder="Мобильная связь, ЖКХ, интернет" required />
+              </label>
+            )}
+
+            {action === 'exchange' && (
+              <div className="form__grid">
+                <label>
+                  Получить валюту
+                  <select name="toCurrency" defaultValue="USD">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="CNY">CNY</option>
+                  </select>
+                </label>
+                <label>
+                  Назначение
+                  <input name="note" placeholder="Например, поездка" />
+                </label>
+              </div>
+            )}
+
+            {action === 'openAccount' && (
+              <>
+                <label>
+                  Название счёта
+                  <input name="name" placeholder="Например, счёт для поездки" required />
+                </label>
+                <div className="form__grid">
+                  <label>
+                    Валюта
+                    <select name="currency" defaultValue="RUB">
+                      <option value="RUB">RUB</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="CNY">CNY</option>
+                    </select>
+                  </label>
+                  <label>
+                    Тип
+                    <select name="type" defaultValue="debit">
+                      <option value="debit">Обычный</option>
+                      <option value="saving">Накопительный</option>
+                    </select>
+                  </label>
+                </div>
+              </>
+            )}
+
+            {action !== 'openAccount' && (
+              <label>
+                Сумма
+                <input min="1" name="amount" placeholder="0" required type="number" />
+              </label>
+            )}
+
+            <button className="button-primary" type="submit">
+              Продолжить
+            </button>
+          </form>
+        )}
+      </section>
+    </div>
+  );
 }
+
 export default ActionModal;
