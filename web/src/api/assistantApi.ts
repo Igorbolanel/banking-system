@@ -3,6 +3,16 @@ import { request, withFallback } from './http';
 
 export const assistantApi = {
   sendMessage(message: string) {
-    return withFallback<{ answer: string }>(() => request(`${API_URLS.assistant}/api/chat`, { method: 'POST', body: JSON.stringify({ message }) }), { answer: 'Пока Assistant Service не подключён, я отвечаю из frontend fallback.' });
+    return withFallback<{ answer: string }>(
+      () =>
+        request(`${API_URLS.assistant}/api/chat`, {
+          method: 'POST',
+          body: JSON.stringify({ message }),
+        }),
+      {
+        answer:
+          'Пока Assistant Service не подключён, я отвечаю из frontend fallback. После интеграции ответ будет приходить с backend.',
+      },
+    );
   },
 };
