@@ -1,5 +1,89 @@
 import { useState, type FormEvent } from 'react';
 import type { BankingState, Theme } from '../types/banking';
-interface ProfilePageProps { state: BankingState; onUpdateProfile: (payload: Partial<BankingState['profile']>) => void; onThemeChange: (theme: Theme) => void }
-function ProfilePage({ state, onUpdateProfile, onThemeChange }: ProfilePageProps) { const [theme, setTheme] = useState<Theme>(state.profile.theme); function handleSubmit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const formData = new FormData(event.currentTarget); onUpdateProfile({ fullName: String(formData.get('fullName') ?? state.profile.fullName), phone: String(formData.get('phone') ?? state.profile.phone), email: String(formData.get('email') ?? state.profile.email), city: String(formData.get('city') ?? state.profile.city), theme }); } return <section className="content__row content__row--wide"><div className="card"><p className="eyebrow">Профиль</p><h2>{state.profile.fullName}</h2><div className="profile-list"><div><span>Телефон</span><strong>{state.profile.phone}</strong></div><div><span>Email</span><strong>{state.profile.email}</strong></div><div><span>Город</span><strong>{state.profile.city}</strong></div><div><span>Роль</span><strong>{state.profile.role === 'admin' ? 'Администратор' : 'Пользователь'}</strong></div><div><span>Кэшбэк</span><strong>{state.profile.cashbackLevel}</strong></div></div></div><div className="card"><p className="eyebrow">Настройки</p><h2>Интерфейс и данные</h2><form className="form form--page" onSubmit={handleSubmit}><label>Имя<input name="fullName" defaultValue={state.profile.fullName} /></label><label>Телефон<input name="phone" defaultValue={state.profile.phone} /></label><label>Email<input name="email" defaultValue={state.profile.email} /></label><label>Город<input name="city" defaultValue={state.profile.city} /></label><label>Тема<select value={theme} onChange={(event) => { const nextTheme = event.target.value as Theme; setTheme(nextTheme); onThemeChange(nextTheme); }}><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label><button className="button-primary" type="submit">Сохранить</button></form></div></section>; }
+
+interface ProfilePageProps {
+  state: BankingState;
+  onUpdateProfile: (payload: Partial<BankingState['profile']>) => void;
+  onThemeChange: (theme: Theme) => void;
+}
+
+function ProfilePage({ state, onUpdateProfile, onThemeChange }: ProfilePageProps) {
+  const [theme, setTheme] = useState<Theme>(state.profile.theme);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    onUpdateProfile({
+      fullName: String(formData.get('fullName') ?? state.profile.fullName),
+      phone: String(formData.get('phone') ?? state.profile.phone),
+      email: String(formData.get('email') ?? state.profile.email),
+      city: String(formData.get('city') ?? state.profile.city),
+      theme,
+    });
+  }
+
+  return (
+    <section className="content__row content__row--wide">
+      <div className="card">
+        <p className="eyebrow">Профиль</p>
+        <h2>{state.profile.fullName}</h2>
+
+        <div className="profile-list">
+          <div><span>Телефон</span><strong>{state.profile.phone}</strong></div>
+          <div><span>Email</span><strong>{state.profile.email}</strong></div>
+          <div><span>Город</span><strong>{state.profile.city}</strong></div>
+          <div><span>Роль</span><strong>{state.profile.role === 'admin' ? 'Администратор' : 'Пользователь'}</strong></div>
+          <div><span>Кэшбэк</span><strong>{state.profile.cashbackLevel}</strong></div>
+        </div>
+      </div>
+
+      <div className="card">
+        <p className="eyebrow">Настройки</p>
+        <h2>Интерфейс и данные</h2>
+
+        <form className="form form--page" onSubmit={handleSubmit}>
+          <label>
+            Имя
+            <input name="fullName" defaultValue={state.profile.fullName} />
+          </label>
+
+          <label>
+            Телефон
+            <input name="phone" defaultValue={state.profile.phone} />
+          </label>
+
+          <label>
+            Email
+            <input name="email" defaultValue={state.profile.email} />
+          </label>
+
+          <label>
+            Город
+            <input name="city" defaultValue={state.profile.city} />
+          </label>
+
+          <label>
+            Тема
+            <select
+              value={theme}
+              onChange={(event) => {
+                const nextTheme = event.target.value as Theme;
+                setTheme(nextTheme);
+                onThemeChange(nextTheme);
+              }}
+            >
+              <option value="light">Светлая</option>
+              <option value="dark">Тёмная</option>
+            </select>
+          </label>
+
+          <button className="button-primary" type="submit">Сохранить</button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
 export default ProfilePage;
