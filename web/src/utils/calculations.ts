@@ -7,22 +7,38 @@ export function toRub(amount: number, currency: CurrencyCode, rates: CurrencyRat
 }
 
 export function getTotalBalance(accounts: Account[], rates: CurrencyRate[]) {
-  return accounts.filter((account) => account.status === 'active').reduce((sum, account) => sum + toRub(account.balance, account.currency, rates), 0);
+  return accounts
+    .filter((account) => account.status === 'active')
+    .reduce((sum, account) => sum + toRub(account.balance, account.currency, rates), 0);
 }
 
 export function getMonthlyIncome(transactions: Transaction[]) {
-  return transactions.filter((tx) => tx.amount > 0 && tx.status !== 'failed').reduce((sum, tx) => sum + tx.amount, 0);
+  return transactions
+    .filter((tx) => tx.amount > 0 && tx.status !== 'failed')
+    .reduce((sum, tx) => sum + tx.amount, 0);
 }
 
 export function getMonthlyOutcome(transactions: Transaction[]) {
-  return Math.abs(transactions.filter((tx) => tx.amount < 0 && tx.status !== 'failed').reduce((sum, tx) => sum + tx.amount, 0));
+  return Math.abs(
+    transactions
+      .filter((tx) => tx.amount < 0 && tx.status !== 'failed')
+      .reduce((sum, tx) => sum + tx.amount, 0),
+  );
 }
 
 export function getCategoryTotals(transactions: Transaction[]) {
-  return transactions.filter((tx) => tx.amount < 0 && tx.status !== 'failed').reduce<Record<string, number>>((acc, tx) => {
-    acc[tx.category] = (acc[tx.category] ?? 0) + Math.abs(tx.amount);
-    return acc;
-  }, {});
+  return transactions
+    .filter((tx) => tx.amount < 0 && tx.status !== 'failed')
+    .reduce<Record<string, number>>((acc, tx) => {
+      acc[tx.category] = (acc[tx.category] ?? 0) + Math.abs(tx.amount);
+      return acc;
+    }, {});
+}
+
+export function getStatusText(status: Transaction['status']) {
+  if (status === 'success') return 'Выполнено';
+  if (status === 'pending') return 'В обработке';
+  return 'Ошибка';
 }
 
 export function createAccountNumber() {
