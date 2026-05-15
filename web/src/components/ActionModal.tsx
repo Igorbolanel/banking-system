@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { accounts } from '../data/mockData';
-import type { Action } from '../types/banking';
+import type { Account, Action } from '../types/banking';
 import { formatMoney } from '../utils/formatters';
 
 interface ActionModalProps {
   action: Action | null;
+  accounts: Account[];
   onClose: () => void;
+  onSubmit: (action: Action, payload: Record<string, string | number>) => void;
 }
 
 const titleMap: Record<Action, string> = {
@@ -16,13 +17,26 @@ const titleMap: Record<Action, string> = {
   openAccount: 'Открытие счёта',
 };
 
-function ActionModal({ action, onClose }: ActionModalProps) {
+function ActionModal({ action, accounts, onClose, onSubmit }: ActionModalProps) {
   const [submitted, setSubmitted] = useState(false);
 
   if (!action) return null;
 
+  const activeAccounts = accounts.filter((account) => account.status === 'active');
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!action) return;
+
+    const formData = new FormData(event.currentTarget);
+    const payload: Record<string, string | number> = {};
+
+    formData.forEach((value, key) => {
+      payload[key] = value.toString();
+    });
+
+    onSubmit(action, payload);
     setSubmitted(true);
   }
 
@@ -40,8 +54,9 @@ function ActionModal({ action, onClose }: ActionModalProps) {
 
         {submitted ? (
           <div className="success-state">
-            <strong>Заявка создана</strong>
-            <p>Когда backend будет подключён, операция будет отправляться в Core Service.</p>
+            <span className="success-state__icon">✓</span>
+            <strong>Операция обработана</strong>
+            <p>Данные обновлены локально. После подключения backend действие будет отправляться в сервис.</p>
             <button type="button" onClick={onClose}>
               Готово
             </button>
@@ -50,9 +65,9 @@ function ActionModal({ action, onClose }: ActionModalProps) {
           <form className="form" onSubmit={handleSubmit}>
             {action !== 'openAccount' && (
               <label>
-                Счёт списания
-                <select>
-                  {accounts.map((account) => (
+                Счёт
+                <select name="accountId" required>
+                  {activeAccounts.map((account) => (
                     <option key={account.id} value={account.id}>
                       {account.name} — {formatMoney(account.balance, account.currency)}
                     </option>
@@ -64,34 +79,30 @@ function ActionModal({ action, onClose }: ActionModalProps) {
             {action === 'transfer' && (
               <label>
                 Номер счёта получателя
-                <input placeholder="40817810000000000000" />
+                <input name="toAccountNumber" placeholder="40817810000000000000" required />
               </label>
             )}
 
             {action === 'pay' && (
               <label>
                 Получатель
-                <input placeholder="Мобильная связь, ЖКХ, интернет" />
+                <input name="title" placeholder="Мобильная связь, ЖКХ, интернет" required />
               </label>
             )}
 
             {action === 'exchange' && (
               <div className="form__grid">
                 <label>
-                  Из валюты
-                  <select>
-                    <option>RUB</option>
-                    <option>USD</option>
-                    <option>EUR</option>
+                  Получить валюту
+                  <select name="toCurrency" defaultValue="USD">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="CNY">CNY</option>
                   </select>
                 </label>
                 <label>
-                  В валюту
-                  <select>
-                    <option>USD</option>
-                    <option>EUR</option>
-                    <option>CNY</option>
-                  </select>
+                  Назначение
+                  <input name="note" placeholder="Например, поездка" />
                 </label>
               </div>
             )}
@@ -100,24 +111,33 @@ function ActionModal({ action, onClose }: ActionModalProps) {
               <>
                 <label>
                   Название счёта
-                  <input placeholder="Например, счёт для поездки" />
+                  <input name="name" placeholder="Например, счёт для поездки" required />
                 </label>
-                <label>
-                  Валюта
-                  <select>
-                    <option>RUB</option>
-                    <option>USD</option>
-                    <option>EUR</option>
-                    <option>CNY</option>
-                  </select>
-                </label>
+                <div className="form__grid">
+                  <label>
+                    Валюта
+                    <select name="currency" defaultValue="RUB">
+                      <option value="RUB">RUB</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="CNY">CNY</option>
+                    </select>
+                  </label>
+                  <label>
+                    Тип
+                    <select name="type" defaultValue="debit">
+                      <option value="debit">Обычный</option>
+                      <option value="saving">Накопительный</option>
+                    </select>
+                  </label>
+                </div>
               </>
             )}
 
             {action !== 'openAccount' && (
               <label>
                 Сумма
-                <input min="1" placeholder="0" type="number" />
+                <input min="1" name="amount" placeholder="0" required type="number" />
               </label>
             )}
 

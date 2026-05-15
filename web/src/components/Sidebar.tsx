@@ -13,7 +13,7 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
         <span className="sidebar__logo-mark">М</span>
         <span>
           <span className="sidebar__logo-text">МИК Банк</span>
-          <span className="sidebar__logo-subtitle">интернет-банк</span>
+          <span className="sidebar__logo-subtitle">цифровой банк</span>
         </span>
       </button>
 
@@ -36,7 +36,7 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
       <div className="sidebar__promo">
         <span className="sidebar__promo-label">Кэшбэк недели</span>
         <strong>до 15%</strong>
-        <p>Супермаркеты, транспорт и подписки</p>
+        <p>Супермаркеты, транспорт, кафе и подписки</p>
       </div>
     </aside>
   );

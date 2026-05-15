@@ -1,24 +1,55 @@
-import { news } from '../data/mockData';
+import { useMemo, useState } from 'react';
+import type { BankingState } from '../types/banking';
 import { formatDate } from '../utils/formatters';
 
-function NewsPage() {
+interface NewsPageProps {
+  state: BankingState;
+}
+
+function NewsPage({ state }: NewsPageProps) {
+  const [query, setQuery] = useState('');
+  const [tag, setTag] = useState('Все');
+
+  const tags = useMemo(() => ['Все', ...Array.from(new Set(state.news.map((item) => item.tag)))], [state.news]);
+
+  const filteredNews = useMemo(
+    () =>
+      state.news.filter((item) => {
+        const matchesTag = tag === 'Все' || item.tag === tag;
+        const matchesQuery = `${item.title} ${item.description}`.toLowerCase().includes(query.toLowerCase());
+        return matchesTag && matchesQuery;
+      }),
+    [state.news, query, tag],
+  );
+
   return (
     <section className="page-grid">
       <div className="page-hero">
         <div>
-          <p className="eyebrow">Инфо-сервис</p>
+          <p className="eyebrow">Info Service</p>
           <h2>Финансовые новости и подсказки</h2>
-          <p>В будущем этот раздел будет получать данные из Info Service.</p>
+          <p>В будущем этот раздел будет получать статьи и уведомления из отдельного backend-сервиса.</p>
+        </div>
+      </div>
+
+      <div className="toolbar">
+        <input placeholder="Поиск по новостям" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <div className="filter-tabs filter-tabs--compact">
+          {tags.map((item) => (
+            <button className={tag === item ? 'active' : ''} key={item} type="button" onClick={() => setTag(item)}>
+              {item}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="news-grid">
-        {news.map((item) => (
+        {filteredNews.map((item) => (
           <article className="news-card" key={item.id}>
             <span>{item.tag}</span>
             <h3>{item.title}</h3>
             <p>{item.description}</p>
-            <small>{formatDate(item.publishedAt)}</small>
+            <small>{formatDate(item.publishedAt)} • {item.readMinutes} мин</small>
           </article>
         ))}
       </div>

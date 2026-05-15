@@ -5,17 +5,11 @@ import { request, withFallback } from './http';
 
 export const coreApi = {
   getProfile() {
-    return withFallback<UserProfile>(
-      () => request(`${API_URLS.core}/api/users/me`),
-      profile,
-    );
+    return withFallback<UserProfile>(() => request(`${API_URLS.core}/api/users/me`), profile);
   },
 
   getAccounts() {
-    return withFallback<Account[]>(
-      () => request(`${API_URLS.core}/api/accounts`),
-      accounts,
-    );
+    return withFallback<Account[]>(() => request(`${API_URLS.core}/api/accounts`), accounts);
   },
 
   createAccount(payload: Pick<Account, 'name' | 'currency' | 'type'>) {
@@ -24,6 +18,7 @@ export const coreApi = {
       number: '40817810000000000000',
       balance: 0,
       status: 'active',
+      openedAt: new Date().toISOString(),
       ...payload,
     };
 
@@ -38,10 +33,7 @@ export const coreApi = {
   },
 
   getCards() {
-    return withFallback<BankCard[]>(
-      () => request(`${API_URLS.core}/api/cards`),
-      cards,
-    );
+    return withFallback<BankCard[]>(() => request(`${API_URLS.core}/api/cards`), cards);
   },
 
   getTransactions() {

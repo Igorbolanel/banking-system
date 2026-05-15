@@ -1,4 +1,5 @@
-import type { Page } from '../types/banking';
+import type { Page, Theme } from '../types/banking';
+import { getInitials } from '../utils/formatters';
 
 const titles: Record<Page, string> = {
   dashboard: 'Главная',
@@ -13,9 +14,13 @@ const titles: Record<Page, string> = {
 
 interface HeaderProps {
   activePage: Page;
+  theme: Theme;
+  userName: string;
+  onThemeToggle: () => void;
+  onReset: () => void;
 }
 
-function Header({ activePage }: HeaderProps) {
+function Header({ activePage, theme, userName, onThemeToggle, onReset }: HeaderProps) {
   return (
     <header className="header">
       <div>
@@ -24,10 +29,16 @@ function Header({ activePage }: HeaderProps) {
       </div>
 
       <div className="header__right">
-        <div className="header__search">Поиск по операциям</div>
+        <div className="header__search">⌘K Поиск по операциям</div>
+        <button className="icon-button" type="button" onClick={onThemeToggle} title="Сменить тему">
+          {theme === 'dark' ? '☀' : '☾'}
+        </button>
+        <button className="icon-button icon-button--wide" type="button" onClick={onReset}>
+          Сброс
+        </button>
         <div className="header__user">
-          <span className="header__avatar">И</span>
-          <span>Игорь</span>
+          <span className="header__avatar">{getInitials(userName)}</span>
+          <span>{userName.split(' ')[0]}</span>
         </div>
       </div>
     </header>

@@ -30,10 +30,7 @@ export async function request<T>(url: string, options: RequestOptions = {}): Pro
   }
 }
 
-export async function withFallback<T>(
-  loader: () => Promise<T>,
-  fallback: T,
-): Promise<T> {
+export async function withFallback<T>(loader: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await loader();
   } catch {

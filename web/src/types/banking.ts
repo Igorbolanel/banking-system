@@ -12,6 +12,8 @@ export type Page =
 
 export type Action = 'topup' | 'transfer' | 'pay' | 'exchange' | 'openAccount';
 
+export type Theme = 'light' | 'dark';
+
 export interface NavItem {
   key: Page;
   label: string;
@@ -27,6 +29,7 @@ export interface Account {
   type: 'debit' | 'saving' | 'credit';
   status: 'active' | 'closed';
   interestRate?: number;
+  openedAt: string;
 }
 
 export interface BankCard {
@@ -37,7 +40,10 @@ export interface BankCard {
   balance: number;
   currency: CurrencyCode;
   expiresAt: string;
-  color: 'yellow' | 'black' | 'platinum';
+  color: 'yellow' | 'black' | 'platinum' | 'violet';
+  status: 'active' | 'blocked';
+  cashback: number;
+  dailyLimit: number;
 }
 
 export interface Transaction {
@@ -49,6 +55,7 @@ export interface Transaction {
   createdAt: string;
   status: 'success' | 'pending' | 'failed';
   accountId: string;
+  type: 'income' | 'outcome' | 'transfer' | 'exchange';
 }
 
 export interface CurrencyRate {
@@ -65,6 +72,7 @@ export interface NewsItem {
   description: string;
   tag: string;
   publishedAt: string;
+  readMinutes: number;
 }
 
 export interface AssistantMessage {
@@ -79,6 +87,36 @@ export interface UserProfile {
   phone: string;
   email: string;
   role: 'user' | 'admin';
-  theme: 'light' | 'dark';
+  theme: Theme;
   cashbackLevel: string;
+  city: string;
+}
+
+export interface SavingGoal {
+  id: string;
+  title: string;
+  target: number;
+  saved: number;
+  currency: CurrencyCode;
+  icon: string;
+}
+
+export interface CashbackCategory {
+  id: string;
+  title: string;
+  percent: number;
+  icon: string;
+  selected: boolean;
+}
+
+export interface BankingState {
+  profile: UserProfile;
+  accounts: Account[];
+  cards: BankCard[];
+  transactions: Transaction[];
+  rates: CurrencyRate[];
+  news: NewsItem[];
+  assistantMessages: AssistantMessage[];
+  goals: SavingGoal[];
+  cashbackCategories: CashbackCategory[];
 }

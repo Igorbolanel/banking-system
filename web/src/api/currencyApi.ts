@@ -11,11 +11,7 @@ export const currencyApi = {
     );
   },
 
-  convert(payload: {
-    from: CurrencyCode;
-    to: CurrencyCode;
-    amount: number;
-  }) {
+  convert(payload: { from: CurrencyCode; to: CurrencyCode; amount: number }) {
     const target = currencyRates.find((rate) => rate.code === payload.to);
     const fallbackResult = target ? payload.amount / target.sell : payload.amount;
 

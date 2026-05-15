@@ -1,37 +1,54 @@
-import { accounts } from '../data/mockData';
-import type { Action } from '../types/banking';
-import { formatMoney, maskAccountNumber } from '../utils/formatters';
+import { useMemo, useState } from 'react';
+import type { Account, Action, BankingState } from '../types/banking';
+import { formatDate, formatMoney, maskAccountNumber } from '../utils/formatters';
 
 interface AccountsPageProps {
+  state: BankingState;
   onActionSelect: (action: Action) => void;
+  onCloseAccount: (accountId: string) => void;
 }
 
-function AccountsPage({ onActionSelect }: AccountsPageProps) {
+function AccountsPage({ state, onActionSelect, onCloseAccount }: AccountsPageProps) {
+  const [filter, setFilter] = useState<Account['type'] | 'all'>('all');
+
+  const accounts = useMemo(
+    () => state.accounts.filter((account) => filter === 'all' || account.type === filter),
+    [state.accounts, filter],
+  );
+
   return (
     <section className="page-grid">
       <div className="page-hero">
         <div>
           <p className="eyebrow">Счета</p>
           <h2>Открытие, просмотр и закрытие счетов</h2>
-          <p>Раздел закрывает требования по банковским счетам и накопительному счёту.</p>
+          <p>Раздел закрывает требования по обычным и накопительным банковским счетам.</p>
         </div>
-        <button type="button" onClick={() => onActionSelect('openAccount')}>
-          Открыть счёт
-        </button>
+        <button type="button" onClick={() => onActionSelect('openAccount')}>Открыть счёт</button>
+      </div>
+
+      <div className="filter-tabs">
+        <button className={filter === 'all' ? 'active' : ''} type="button" onClick={() => setFilter('all')}>Все</button>
+        <button className={filter === 'debit' ? 'active' : ''} type="button" onClick={() => setFilter('debit')}>Обычные</button>
+        <button className={filter === 'saving' ? 'active' : ''} type="button" onClick={() => setFilter('saving')}>Накопительные</button>
       </div>
 
       <div className="accounts-list">
         {accounts.map((account) => (
-          <article className="account-card" key={account.id}>
+          <article className={`account-card ${account.status === 'closed' ? 'account-card--closed' : ''}`} key={account.id}>
             <div>
-              <span className="badge">{account.type === 'saving' ? 'Накопительный' : 'Активный'}</span>
+              <span className="badge">
+                {account.status === 'closed' ? 'Закрыт' : account.type === 'saving' ? 'Накопительный' : 'Активный'}
+              </span>
               <h3>{account.name}</h3>
-              <p>{maskAccountNumber(account.number)}</p>
+              <p>{maskAccountNumber(account.number)} • открыт {formatDate(account.openedAt)}</p>
             </div>
             <div className="account-card__side">
               <strong>{formatMoney(account.balance, account.currency)}</strong>
               {account.interestRate && <span>{account.interestRate}% годовых</span>}
-              <button type="button">Закрыть счёт</button>
+              {account.status === 'active' && (
+                <button type="button" onClick={() => onCloseAccount(account.id)}>Закрыть счёт</button>
+              )}
             </div>
           </article>
         ))}

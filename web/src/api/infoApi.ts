@@ -5,9 +5,6 @@ import { request, withFallback } from './http';
 
 export const infoApi = {
   getNews() {
-    return withFallback<NewsItem[]>(
-      () => request(`${API_URLS.info}/api/news`),
-      news,
-    );
+    return withFallback<NewsItem[]>(() => request(`${API_URLS.info}/api/news`), news);
   },
 };

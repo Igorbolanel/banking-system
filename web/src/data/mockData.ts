@@ -2,9 +2,12 @@ import type {
   Account,
   AssistantMessage,
   BankCard,
+  BankingState,
+  CashbackCategory,
   CurrencyRate,
   NavItem,
   NewsItem,
+  SavingGoal,
   Transaction,
   UserProfile,
 } from '../types/banking';
@@ -27,6 +30,7 @@ export const profile: UserProfile = {
   role: 'user',
   theme: 'light',
   cashbackLevel: 'Premium 5%',
+  city: 'Москва',
 };
 
 export const accounts: Account[] = [
@@ -38,6 +42,7 @@ export const accounts: Account[] = [
     currency: 'RUB',
     type: 'debit',
     status: 'active',
+    openedAt: '2025-09-12T10:00:00Z',
   },
   {
     id: 'acc-saving-rub',
@@ -48,6 +53,7 @@ export const accounts: Account[] = [
     type: 'saving',
     status: 'active',
     interestRate: 12.5,
+    openedAt: '2025-10-01T12:00:00Z',
   },
   {
     id: 'acc-usd',
@@ -57,6 +63,17 @@ export const accounts: Account[] = [
     currency: 'USD',
     type: 'debit',
     status: 'active',
+    openedAt: '2025-12-18T09:30:00Z',
+  },
+  {
+    id: 'acc-eur',
+    name: 'Евро счёт',
+    number: '40817978000000077881',
+    balance: 260,
+    currency: 'EUR',
+    type: 'debit',
+    status: 'active',
+    openedAt: '2026-02-02T09:30:00Z',
   },
 ];
 
@@ -70,6 +87,9 @@ export const cards: BankCard[] = [
     currency: 'RUB',
     expiresAt: '08/29',
     color: 'black',
+    status: 'active',
+    cashback: 5,
+    dailyLimit: 150000,
   },
   {
     id: 'card-yellow',
@@ -80,6 +100,9 @@ export const cards: BankCard[] = [
     currency: 'RUB',
     expiresAt: '02/30',
     color: 'yellow',
+    status: 'active',
+    cashback: 7,
+    dailyLimit: 90000,
   },
   {
     id: 'card-platinum',
@@ -90,6 +113,22 @@ export const cards: BankCard[] = [
     currency: 'USD',
     expiresAt: '11/28',
     color: 'platinum',
+    status: 'active',
+    cashback: 3,
+    dailyLimit: 250000,
+  },
+  {
+    id: 'card-violet',
+    name: 'МИК Travel',
+    maskedNumber: '**** 0442',
+    paymentSystem: 'Visa',
+    balance: 780,
+    currency: 'EUR',
+    expiresAt: '12/30',
+    color: 'violet',
+    status: 'active',
+    cashback: 4,
+    dailyLimit: 180000,
   },
 ];
 
@@ -103,6 +142,7 @@ export const transactions: Transaction[] = [
     createdAt: '2026-05-10T10:15:00Z',
     status: 'success',
     accountId: 'acc-main-rub',
+    type: 'transfer',
   },
   {
     id: 'tx-2',
@@ -113,6 +153,7 @@ export const transactions: Transaction[] = [
     createdAt: '2026-05-09T18:20:00Z',
     status: 'success',
     accountId: 'acc-main-rub',
+    type: 'income',
   },
   {
     id: 'tx-3',
@@ -123,6 +164,7 @@ export const transactions: Transaction[] = [
     createdAt: '2026-05-08T12:40:00Z',
     status: 'success',
     accountId: 'acc-main-rub',
+    type: 'outcome',
   },
   {
     id: 'tx-4',
@@ -133,6 +175,7 @@ export const transactions: Transaction[] = [
     createdAt: '2026-05-07T09:00:00Z',
     status: 'success',
     accountId: 'acc-saving-rub',
+    type: 'income',
   },
   {
     id: 'tx-5',
@@ -143,6 +186,51 @@ export const transactions: Transaction[] = [
     createdAt: '2026-05-06T16:10:00Z',
     status: 'pending',
     accountId: 'acc-usd',
+    type: 'exchange',
+  },
+  {
+    id: 'tx-6',
+    title: 'Такси',
+    category: 'Транспорт',
+    amount: -760,
+    currency: 'RUB',
+    createdAt: '2026-05-05T21:30:00Z',
+    status: 'success',
+    accountId: 'acc-main-rub',
+    type: 'outcome',
+  },
+  {
+    id: 'tx-7',
+    title: 'Кофейня',
+    category: 'Кафе',
+    amount: -420,
+    currency: 'RUB',
+    createdAt: '2026-05-05T09:20:00Z',
+    status: 'success',
+    accountId: 'acc-main-rub',
+    type: 'outcome',
+  },
+  {
+    id: 'tx-8',
+    title: 'Подписка на музыку',
+    category: 'Подписки',
+    amount: -299,
+    currency: 'RUB',
+    createdAt: '2026-05-04T08:00:00Z',
+    status: 'success',
+    accountId: 'acc-main-rub',
+    type: 'outcome',
+  },
+  {
+    id: 'tx-9',
+    title: 'Зарплата',
+    category: 'Доход',
+    amount: 95000,
+    currency: 'RUB',
+    createdAt: '2026-05-03T13:00:00Z',
+    status: 'success',
+    accountId: 'acc-main-rub',
+    type: 'income',
   },
 ];
 
@@ -159,6 +247,7 @@ export const news: NewsItem[] = [
     description: 'Разбираем, почему ежедневный остаток и понятная ставка удобнее обычной копилки.',
     tag: 'Сбережения',
     publishedAt: '2026-05-10T09:00:00Z',
+    readMinutes: 4,
   },
   {
     id: 'news-2',
@@ -166,6 +255,7 @@ export const news: NewsItem[] = [
     description: 'Покупка, продажа, комиссия и лимиты — четыре вещи, которые влияют на итоговую сумму.',
     tag: 'Валюта',
     publishedAt: '2026-05-09T11:30:00Z',
+    readMinutes: 3,
   },
   {
     id: 'news-3',
@@ -173,6 +263,23 @@ export const news: NewsItem[] = [
     description: 'Проверяйте номер счёта, сумму, назначение и статус операции перед подтверждением.',
     tag: 'Безопасность',
     publishedAt: '2026-05-08T15:00:00Z',
+    readMinutes: 5,
+  },
+  {
+    id: 'news-4',
+    title: 'Кэшбэк без ловушек: как выбирать категории',
+    description: 'Лучше выбирать категории, где у вас уже есть регулярные траты, а не гнаться за процентом.',
+    tag: 'Кэшбэк',
+    publishedAt: '2026-05-07T14:00:00Z',
+    readMinutes: 4,
+  },
+  {
+    id: 'news-5',
+    title: 'Почему важно разделять основные и накопительные счета',
+    description: 'Отдельные счета помогают не тратить деньги, которые отложены на цель.',
+    tag: 'Счета',
+    publishedAt: '2026-05-06T11:10:00Z',
+    readMinutes: 6,
   },
 ];
 
@@ -180,7 +287,7 @@ export const assistantMessages: AssistantMessage[] = [
   {
     id: 'assistant-1',
     role: 'assistant',
-    text: 'Привет! Я помогу найти счёт, объяснить перевод или подсказать курс валют.',
+    text: 'Привет! Я помогу найти счёт, объяснить перевод, подсказать курс валют или разобрать последние траты.',
     createdAt: '2026-05-10T09:00:00Z',
   },
 ];
@@ -190,4 +297,52 @@ export const quickPrompts = [
   'Покажи последние расходы',
   'Как перевести деньги по номеру счёта?',
   'Какая комиссия при обмене валюты?',
+  'Какой общий баланс?',
 ];
+
+export const goals: SavingGoal[] = [
+  {
+    id: 'goal-1',
+    title: 'Финансовая подушка',
+    target: 500000,
+    saved: 315000,
+    currency: 'RUB',
+    icon: '🛡',
+  },
+  {
+    id: 'goal-2',
+    title: 'Путешествие',
+    target: 180000,
+    saved: 68500,
+    currency: 'RUB',
+    icon: '✈',
+  },
+  {
+    id: 'goal-3',
+    title: 'Новый ноутбук',
+    target: 140000,
+    saved: 93000,
+    currency: 'RUB',
+    icon: '⌘',
+  },
+];
+
+export const cashbackCategories: CashbackCategory[] = [
+  { id: 'cashback-1', title: 'Супермаркеты', percent: 5, icon: '🛒', selected: true },
+  { id: 'cashback-2', title: 'Транспорт', percent: 7, icon: '🚕', selected: true },
+  { id: 'cashback-3', title: 'Кафе', percent: 10, icon: '☕', selected: false },
+  { id: 'cashback-4', title: 'Подписки', percent: 8, icon: '▣', selected: true },
+  { id: 'cashback-5', title: 'Путешествия', percent: 4, icon: '✈', selected: false },
+];
+
+export const initialBankingState: BankingState = {
+  profile,
+  accounts,
+  cards,
+  transactions,
+  rates: currencyRates,
+  news,
+  assistantMessages,
+  goals,
+  cashbackCategories,
+};

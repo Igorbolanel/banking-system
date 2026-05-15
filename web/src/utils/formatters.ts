@@ -13,9 +13,16 @@ export function getCurrencySymbol(currency: CurrencyCode) {
 
 export function formatMoney(amount: number, currency: CurrencyCode) {
   return `${amount.toLocaleString('ru-RU', {
-    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    minimumFractionDigits: Math.abs(amount % 1) === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   })} ${getCurrencySymbol(currency)}`;
+}
+
+export function formatCompactMoney(amount: number, currency: CurrencyCode = 'RUB') {
+  return `${new Intl.NumberFormat('ru-RU', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amount)} ${getCurrencySymbol(currency)}`;
 }
 
 export function formatDate(value: string) {
@@ -37,4 +44,14 @@ export function formatDateTime(value: string) {
 
 export function maskAccountNumber(value: string) {
   return `${value.slice(0, 4)} •••• •••• ${value.slice(-4)}`;
+}
+
+export function getInitials(fullName: string) {
+  return fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
 }

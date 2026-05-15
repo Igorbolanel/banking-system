@@ -11,7 +11,7 @@ export const assistantApi = {
         }),
       {
         answer:
-          'Пока backend ассистента не подключён, я отвечаю из фронтового fallback. Позже здесь будет ответ Assistant Service.',
+          'Пока Assistant Service не подключён, я отвечаю из frontend fallback. После интеграции ответ будет приходить с backend.',
       },
     );
   },
