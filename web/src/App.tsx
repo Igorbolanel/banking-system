@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './App.css';
 import ActionModal from './components/ActionModal';
 import Dashboard from './components/Dashboard';
+import Footer from './components/Footer';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ToastStack from './components/ToastStack';
@@ -43,13 +44,24 @@ function App() {
       case 'cards':
         return <CardsPage state={state} />;
       case 'payments':
-        return <PaymentsPage state={state} onTransfer={banking.transfer} onPay={banking.pay} />;
+        return (
+          <PaymentsPage
+            state={state}
+            onTransfer={banking.transfer}
+            onPay={banking.pay}
+          />
+        );
       case 'currency':
         return <CurrencyPage state={state} onExchange={banking.exchange} />;
       case 'news':
         return <NewsPage state={state} />;
       case 'assistant':
-        return <AssistantPage state={state} onSendMessage={banking.sendAssistantMessage} />;
+        return (
+          <AssistantPage
+            state={state}
+            onSendMessage={banking.sendAssistantMessage}
+          />
+        );
       case 'profile':
         return (
           <ProfilePage
@@ -73,9 +85,15 @@ function App() {
           theme={state.profile.theme}
           userName={state.profile.fullName}
           onReset={banking.resetDemoData}
-          onThemeToggle={() => banking.setTheme(state.profile.theme === 'dark' ? 'light' : 'dark')}
+          onThemeToggle={() =>
+            banking.setTheme(state.profile.theme === 'dark' ? 'light' : 'dark')
+          }
         />
-        <div className="content">{renderPage()}</div>
+
+        <div className="content">
+          {renderPage()}
+          <Footer onNavigate={setActivePage} />
+        </div>
       </main>
 
       <ActionModal
