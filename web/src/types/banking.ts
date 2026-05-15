@@ -11,6 +11,7 @@ export type Page =
   | 'profile';
 
 export type Action = 'topup' | 'transfer' | 'pay' | 'exchange' | 'openAccount';
+
 export type Theme = 'light' | 'dark';
 
 export interface NavItem {
@@ -39,7 +40,7 @@ export interface BankCard {
   balance: number;
   currency: CurrencyCode;
   expiresAt: string;
-  color: 'yellow' | 'black' | 'platinum';
+  color: 'yellow' | 'black' | 'platinum' | 'violet';
   status: 'active' | 'blocked';
   cashback: number;
   dailyLimit: number;
@@ -97,6 +98,7 @@ export interface SavingGoal {
   target: number;
   saved: number;
   currency: CurrencyCode;
+  icon: string;
 }
 
 export interface CashbackCategory {
