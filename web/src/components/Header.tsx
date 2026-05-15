@@ -1,37 +1,7 @@
-import type { Page } from '../types/banking';
-
-const titles: Record<Page, string> = {
-  dashboard: 'Главная',
-  accounts: 'Счета',
-  cards: 'Карты',
-  payments: 'Платежи и переводы',
-  currency: 'Валюта',
-  news: 'Финансовые новости',
-  assistant: 'Ассистент',
-  profile: 'Профиль',
-};
-
-interface HeaderProps {
-  activePage: Page;
+import type { Page, Theme } from '../types/banking';
+const titles: Record<Page, string> = { dashboard: 'Главная', accounts: 'Счета', cards: 'Карты', payments: 'Платежи и переводы', currency: 'Валюта', news: 'Финансовые новости', assistant: 'Ассистент', profile: 'Профиль' };
+interface HeaderProps { activePage: Page; theme: Theme; userName: string; onThemeToggle: () => void; onReset: () => void }
+function Header({ activePage, theme, userName, onThemeToggle, onReset }: HeaderProps) {
+  return <header className="header"><div><p className="header__eyebrow">МИК Банк</p><h1>{titles[activePage]}</h1></div><div className="header__right"><div className="header__search">⌘K Поиск по операциям</div><button className="icon-button" type="button" onClick={onThemeToggle}>{theme === 'dark' ? '☀' : '☾'}</button><button className="icon-button icon-button--wide" type="button" onClick={onReset}>Сброс</button><div className="header__user"><span className="header__avatar">{userName.slice(0, 1)}</span><span>{userName.split(' ')[0]}</span></div></div></header>;
 }
-
-function Header({ activePage }: HeaderProps) {
-  return (
-    <header className="header">
-      <div>
-        <p className="header__eyebrow">МИК Банк</p>
-        <h1>{titles[activePage]}</h1>
-      </div>
-
-      <div className="header__right">
-        <div className="header__search">Поиск по операциям</div>
-        <div className="header__user">
-          <span className="header__avatar">И</span>
-          <span>Игорь</span>
-        </div>
-      </div>
-    </header>
-  );
-}
-
 export default Header;
