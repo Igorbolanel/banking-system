@@ -2,9 +2,12 @@ import type {
   Account,
   AssistantMessage,
   BankCard,
+  BankingState,
+  CashbackCategory,
   CurrencyRate,
   NavItem,
   NewsItem,
+  SavingGoal,
   Transaction,
   UserProfile,
 } from '../types/banking';
@@ -27,123 +30,30 @@ export const profile: UserProfile = {
   role: 'user',
   theme: 'light',
   cashbackLevel: 'Premium 5%',
+  city: 'Москва',
 };
 
 export const accounts: Account[] = [
-  {
-    id: 'acc-main-rub',
-    name: 'Основной счёт',
-    number: '40817810000000012345',
-    balance: 152340.5,
-    currency: 'RUB',
-    type: 'debit',
-    status: 'active',
-  },
-  {
-    id: 'acc-saving-rub',
-    name: 'Накопительный счёт',
-    number: '40817810000000056789',
-    balance: 315000,
-    currency: 'RUB',
-    type: 'saving',
-    status: 'active',
-    interestRate: 12.5,
-  },
-  {
-    id: 'acc-usd',
-    name: 'Валютный счёт',
-    number: '40817840000000099887',
-    balance: 820,
-    currency: 'USD',
-    type: 'debit',
-    status: 'active',
-  },
+  { id: 'acc-main-rub', name: 'Основной счёт', number: '40817810000000012345', balance: 152340.5, currency: 'RUB', type: 'debit', status: 'active', openedAt: '2025-09-12T10:00:00Z' },
+  { id: 'acc-saving-rub', name: 'Накопительный счёт', number: '40817810000000056789', balance: 315000, currency: 'RUB', type: 'saving', status: 'active', interestRate: 12.5, openedAt: '2025-10-01T12:00:00Z' },
+  { id: 'acc-usd', name: 'Валютный счёт', number: '40817840000000099887', balance: 820, currency: 'USD', type: 'debit', status: 'active', openedAt: '2025-12-18T09:30:00Z' },
+  { id: 'acc-eur', name: 'Евро счёт', number: '40817978000000077881', balance: 260, currency: 'EUR', type: 'debit', status: 'active', openedAt: '2026-02-02T09:30:00Z' },
 ];
 
 export const cards: BankCard[] = [
-  {
-    id: 'card-black',
-    name: 'МИК Black',
-    maskedNumber: '**** 1234',
-    paymentSystem: 'МИР',
-    balance: 82340.12,
-    currency: 'RUB',
-    expiresAt: '08/29',
-    color: 'black',
-  },
-  {
-    id: 'card-yellow',
-    name: 'МИК Drive',
-    maskedNumber: '**** 5678',
-    paymentSystem: 'МИР',
-    balance: 45600,
-    currency: 'RUB',
-    expiresAt: '02/30',
-    color: 'yellow',
-  },
-  {
-    id: 'card-platinum',
-    name: 'МИК Platinum',
-    maskedNumber: '**** 9012',
-    paymentSystem: 'Mastercard',
-    balance: 1250,
-    currency: 'USD',
-    expiresAt: '11/28',
-    color: 'platinum',
-  },
+  { id: 'card-black', name: 'МИК Black', maskedNumber: '**** 1234', paymentSystem: 'МИР', balance: 82340.12, currency: 'RUB', expiresAt: '08/29', color: 'black', status: 'active', cashback: 5, dailyLimit: 150000 },
+  { id: 'card-yellow', name: 'МИК Drive', maskedNumber: '**** 5678', paymentSystem: 'МИР', balance: 45600, currency: 'RUB', expiresAt: '02/30', color: 'yellow', status: 'active', cashback: 7, dailyLimit: 90000 },
+  { id: 'card-platinum', name: 'МИК Platinum', maskedNumber: '**** 9012', paymentSystem: 'Mastercard', balance: 1250, currency: 'USD', expiresAt: '11/28', color: 'platinum', status: 'active', cashback: 3, dailyLimit: 250000 },
 ];
 
 export const transactions: Transaction[] = [
-  {
-    id: 'tx-1',
-    title: 'Перевод по номеру счёта',
-    category: 'Переводы',
-    amount: -1500,
-    currency: 'RUB',
-    createdAt: '2026-05-10T10:15:00Z',
-    status: 'success',
-    accountId: 'acc-main-rub',
-  },
-  {
-    id: 'tx-2',
-    title: 'Пополнение счёта',
-    category: 'Пополнения',
-    amount: 10000,
-    currency: 'RUB',
-    createdAt: '2026-05-09T18:20:00Z',
-    status: 'success',
-    accountId: 'acc-main-rub',
-  },
-  {
-    id: 'tx-3',
-    title: 'Супермаркет',
-    category: 'Покупки',
-    amount: -3240,
-    currency: 'RUB',
-    createdAt: '2026-05-08T12:40:00Z',
-    status: 'success',
-    accountId: 'acc-main-rub',
-  },
-  {
-    id: 'tx-4',
-    title: 'Начисление процентов',
-    category: 'Накопления',
-    amount: 2760,
-    currency: 'RUB',
-    createdAt: '2026-05-07T09:00:00Z',
-    status: 'success',
-    accountId: 'acc-saving-rub',
-  },
-  {
-    id: 'tx-5',
-    title: 'Обмен валюты',
-    category: 'Валюта',
-    amount: -120,
-    currency: 'USD',
-    createdAt: '2026-05-06T16:10:00Z',
-    status: 'pending',
-    accountId: 'acc-usd',
-  },
+  { id: 'tx-1', title: 'Перевод по номеру счёта', category: 'Переводы', amount: -1500, currency: 'RUB', createdAt: '2026-05-10T10:15:00Z', status: 'success', accountId: 'acc-main-rub', type: 'transfer' },
+  { id: 'tx-2', title: 'Пополнение счёта', category: 'Пополнения', amount: 10000, currency: 'RUB', createdAt: '2026-05-09T18:20:00Z', status: 'success', accountId: 'acc-main-rub', type: 'income' },
+  { id: 'tx-3', title: 'Супермаркет', category: 'Покупки', amount: -3240, currency: 'RUB', createdAt: '2026-05-08T12:40:00Z', status: 'success', accountId: 'acc-main-rub', type: 'outcome' },
+  { id: 'tx-4', title: 'Начисление процентов', category: 'Накопления', amount: 2760, currency: 'RUB', createdAt: '2026-05-07T09:00:00Z', status: 'success', accountId: 'acc-saving-rub', type: 'income' },
+  { id: 'tx-5', title: 'Обмен валюты', category: 'Валюта', amount: -120, currency: 'USD', createdAt: '2026-05-06T16:10:00Z', status: 'pending', accountId: 'acc-usd', type: 'exchange' },
+  { id: 'tx-6', title: 'Такси', category: 'Транспорт', amount: -760, currency: 'RUB', createdAt: '2026-05-05T21:30:00Z', status: 'success', accountId: 'acc-main-rub', type: 'outcome' },
+  { id: 'tx-7', title: 'Кофейня', category: 'Кафе', amount: -420, currency: 'RUB', createdAt: '2026-05-05T09:20:00Z', status: 'success', accountId: 'acc-main-rub', type: 'outcome' },
 ];
 
 export const currencyRates: CurrencyRate[] = [
@@ -153,41 +63,28 @@ export const currencyRates: CurrencyRate[] = [
 ];
 
 export const news: NewsItem[] = [
-  {
-    id: 'news-1',
-    title: 'Как накопительный счёт помогает держать деньги в движении',
-    description: 'Разбираем, почему ежедневный остаток и понятная ставка удобнее обычной копилки.',
-    tag: 'Сбережения',
-    publishedAt: '2026-05-10T09:00:00Z',
-  },
-  {
-    id: 'news-2',
-    title: 'Курсы валют: что важно смотреть перед обменом',
-    description: 'Покупка, продажа, комиссия и лимиты — четыре вещи, которые влияют на итоговую сумму.',
-    tag: 'Валюта',
-    publishedAt: '2026-05-09T11:30:00Z',
-  },
-  {
-    id: 'news-3',
-    title: 'Безопасные переводы: чек-лист перед отправкой денег',
-    description: 'Проверяйте номер счёта, сумму, назначение и статус операции перед подтверждением.',
-    tag: 'Безопасность',
-    publishedAt: '2026-05-08T15:00:00Z',
-  },
+  { id: 'news-1', title: 'Как накопительный счёт помогает держать деньги в движении', description: 'Разбираем, почему ежедневный остаток и понятная ставка удобнее обычной копилки.', tag: 'Сбережения', publishedAt: '2026-05-10T09:00:00Z', readMinutes: 4 },
+  { id: 'news-2', title: 'Курсы валют: что важно смотреть перед обменом', description: 'Покупка, продажа, комиссия и лимиты влияют на итоговую сумму.', tag: 'Валюта', publishedAt: '2026-05-09T11:30:00Z', readMinutes: 3 },
+  { id: 'news-3', title: 'Безопасные переводы: чек-лист перед отправкой денег', description: 'Проверяйте номер счёта, сумму, назначение и статус операции перед подтверждением.', tag: 'Безопасность', publishedAt: '2026-05-08T15:00:00Z', readMinutes: 5 },
+  { id: 'news-4', title: 'Кэшбэк без ловушек: как выбирать категории', description: 'Лучше выбирать категории, где у вас уже есть регулярные траты.', tag: 'Кэшбэк', publishedAt: '2026-05-07T14:00:00Z', readMinutes: 4 },
 ];
 
 export const assistantMessages: AssistantMessage[] = [
-  {
-    id: 'assistant-1',
-    role: 'assistant',
-    text: 'Привет! Я помогу найти счёт, объяснить перевод или подсказать курс валют.',
-    createdAt: '2026-05-10T09:00:00Z',
-  },
+  { id: 'assistant-1', role: 'assistant', text: 'Привет! Я помогу найти счёт, объяснить перевод, подсказать курс валют или разобрать последние траты.', createdAt: '2026-05-10T09:00:00Z' },
 ];
 
-export const quickPrompts = [
-  'Как открыть накопительный счёт?',
-  'Покажи последние расходы',
-  'Как перевести деньги по номеру счёта?',
-  'Какая комиссия при обмене валюты?',
+export const quickPrompts = ['Как открыть накопительный счёт?', 'Покажи последние расходы', 'Как перевести деньги по номеру счёта?', 'Какая комиссия при обмене валюты?'];
+
+export const goals: SavingGoal[] = [
+  { id: 'goal-1', title: 'Финансовая подушка', target: 500000, saved: 315000, currency: 'RUB' },
+  { id: 'goal-2', title: 'Путешествие', target: 180000, saved: 68500, currency: 'RUB' },
 ];
+
+export const cashbackCategories: CashbackCategory[] = [
+  { id: 'cashback-1', title: 'Супермаркеты', percent: 5, icon: '🛒', selected: true },
+  { id: 'cashback-2', title: 'Транспорт', percent: 7, icon: '🚕', selected: true },
+  { id: 'cashback-3', title: 'Кафе', percent: 10, icon: '☕', selected: false },
+  { id: 'cashback-4', title: 'Подписки', percent: 8, icon: '▣', selected: true },
+];
+
+export const initialBankingState: BankingState = { profile, accounts, cards, transactions, rates: currencyRates, news, assistantMessages, goals, cashbackCategories };
