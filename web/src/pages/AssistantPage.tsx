@@ -1,6 +1,64 @@
 import { useState } from 'react';
 import { quickPrompts } from '../data/mockData';
 import type { BankingState } from '../types/banking';
-interface AssistantPageProps { state: BankingState; onSendMessage: (message: string) => void }
-function AssistantPage({ state, onSendMessage }: AssistantPageProps) { const [value, setValue] = useState(''); function submit(text: string) { onSendMessage(text); setValue(''); } return <section className="assistant-page"><div className="page-hero"><div><p className="eyebrow">Assistant Service</p><h2>Банковский ассистент</h2><p>Помогает с переводами, счетами, валютой, новостями и последними операциями.</p></div></div><div className="assistant-layout"><div className="chat">{state.assistantMessages.map((message) => <article className={`chat-message chat-message--${message.role}`} key={message.id}>{message.text}</article>)}<form className="chat-form" onSubmit={(event) => { event.preventDefault(); submit(value); }}><input placeholder="Напишите вопрос" value={value} onChange={(event) => setValue(event.target.value)} /><button type="submit">Отправить</button></form></div><aside className="card"><p className="eyebrow">Быстрые вопросы</p><div className="prompt-list">{quickPrompts.map((prompt) => <button key={prompt} type="button" onClick={() => submit(prompt)}>{prompt}</button>)}</div></aside></div></section>; }
+
+interface AssistantPageProps {
+  state: BankingState;
+  onSendMessage: (message: string) => void;
+}
+
+function AssistantPage({ state, onSendMessage }: AssistantPageProps) {
+  const [value, setValue] = useState('');
+
+  function submit(text: string) {
+    if (!text.trim()) return;
+    onSendMessage(text);
+    setValue('');
+  }
+
+  return (
+    <section className="assistant-page">
+      <div className="page-hero">
+        <div>
+          <p className="eyebrow">Assistant Service</p>
+          <h2>Банковский ассистент</h2>
+          <p>Помогает с переводами, счетами, валютой, новостями и последними операциями.</p>
+        </div>
+      </div>
+
+      <div className="assistant-layout">
+        <div className="chat">
+          {state.assistantMessages.map((message) => (
+            <article className={`chat-message chat-message--${message.role}`} key={message.id}>
+              {message.text}
+            </article>
+          ))}
+
+          <form
+            className="chat-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit(value);
+            }}
+          >
+            <input placeholder="Напишите вопрос" value={value} onChange={(event) => setValue(event.target.value)} />
+            <button type="submit">Отправить</button>
+          </form>
+        </div>
+
+        <aside className="card">
+          <p className="eyebrow">Быстрые вопросы</p>
+          <div className="prompt-list">
+            {quickPrompts.map((prompt) => (
+              <button key={prompt} type="button" onClick={() => submit(prompt)}>
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 export default AssistantPage;
