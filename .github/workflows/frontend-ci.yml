@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "web/**"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,7 +24,7 @@ jobs:
         with:
           node-version: "24.x"
           cache: "npm"
-          cache-dependency-path: "./web/package-lock.json"
+          cache-dependency-path: "web/**/package-lock.json"
 
       - name: Установка зависимостей
         run: npm ci
