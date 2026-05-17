@@ -26,12 +26,13 @@ volumes:
 services:
 
   banking-frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/banking-frontend:${APP_VERSION:-latest}
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/banking-frontend:${WEB_VERSION:-latest}
+    env_file:
+      - .env.versions
+      - .env.secrets
     container_name: banking-frontend-container
-
     ports:
       - "80:80"
-
     restart: unless-stopped
     networks:
       - banking-network
