@@ -55,6 +55,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            # Проверяем, существует ли директория с проектом (-d означает directory)
+            if [ ! -d "~/banking-system" ]; then
+              git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ~/banking-system
+              cd ~/banking-system
+            else
+              cd ~/banking-system
+              git pull origin main
+            fi
             cd ~/banking-system/infra/docker-compose
             git pull origin main
 
