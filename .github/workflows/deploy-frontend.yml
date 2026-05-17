@@ -55,8 +55,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            # Проверяем, существует ли директория с проектом (-d означает directory)
-            if [ ! -d "~/banking-system" ]; then
+            if [ ! -d ~/banking-system ]; then
               git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ~/banking-system
               cd ~/banking-system
             else
@@ -76,5 +75,5 @@ jobs:
               echo "WEB_VERSION=${{ github.ref_name }}" >> .env.versions
             fi
 
-            docker compose pull banking-frontend
-            docker compose up -d banking-frontend
+            docker compose --env-file .env.versions pull banking-frontend
+            docker compose --env-file .env.versions up -d banking-frontend
