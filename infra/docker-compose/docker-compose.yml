@@ -25,13 +25,39 @@ volumes:
 
 services:
 
-  banking-frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/banking-frontend:${WEB_VERSION:-latest}
-    env_file:
-      - .env.versions
-    container_name: banking-frontend-container
+  traefik:
+    image: traefik:v3.7.1
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=balykhin.maxim@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - banking-network
+
+  banking-frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/banking-frontend:${WEB_VERSION:-latest}
+    container_name: banking-frontend-container
+    env_file:
+      - .env.versions
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`iate.space`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
     restart: unless-stopped
     networks:
       - banking-network

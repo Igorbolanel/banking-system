@@ -57,13 +57,11 @@ jobs:
           script: |
             if [ ! -d ~/banking-system ]; then
               git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ~/banking-system
-              cd ~/banking-system
             else
               cd ~/banking-system
               git pull origin main
             fi
             cd ~/banking-system/infra/docker-compose
-            git pull origin main
 
             if ! grep -q "^GITHUB_REPOSITORY_OWNER=" .env.versions; then
               echo "GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}" >> .env.versions
