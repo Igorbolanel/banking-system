@@ -1,4 +1,4 @@
-name: Deploy Frontend to Production
+name: Deploy Frontend
 
 on:
   push:
@@ -61,6 +61,7 @@ jobs:
               cd ~/banking-system
               git pull origin main
             fi
+
             cd ~/banking-system/infra/docker-compose
 
             if ! grep -q "^GITHUB_REPOSITORY_OWNER=" .env.versions; then
