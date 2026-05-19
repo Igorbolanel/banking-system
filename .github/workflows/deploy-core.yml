@@ -1,14 +1,14 @@
-name: Deploy Frontend
+name: Deploy Core Service
 
 on:
   push:
     tags:
-      - "web-v*.*.*"
+      - "core-v*.*.*"
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/banking-frontend
+  IMAGE_NAME: ${{ github.repository_owner }}/banking-core
 
 jobs:
   build-and-push:
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
 
-      - name: Login to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4.1.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -31,23 +31,17 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v7.1.0
         with:
-          context: ./web
+          context: ./services/core-service
           push: true
-          build-args: |
-            VITE_CORE_API_URL=${{ secrets.PROD_CORE_API_URL }}
-            VITE_CURRENCIES_API_URL=${{ secrets.PROD_CURRENCIES_API_URL }}
-            VITE_INFO_API_URL=${{ secrets.PROD_INFO_API_URL }}
-            VITE_ASSISTANT_API_URL=${{ secrets.PROD_ASSISTANT_API_URL }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to server
+      - name: Deploy to Server
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -68,11 +62,11 @@ jobs:
               echo "GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}" >> .env.versions
             fi
 
-            if grep -q "^WEB_VERSION=" .env.versions; then
-              sed -i "s/^WEB_VERSION=.*/WEB_VERSION=${{ github.ref_name }}/" .env.versions
+            if grep -q "^CORE_VERSION=" .env.versions; then
+              sed -i "s/^CORE_VERSION=.*/CORE_VERSION=${{ github.ref_name }}/" .env.versions
             else
-              echo "WEB_VERSION=${{ github.ref_name }}" >> .env.versions
+              echo "CORE_VERSION=${{ github.ref_name }}" >> .env.versions
             fi
 
-            docker compose --env-file .env.versions pull banking-frontend
-            docker compose --env-file .env.versions up -d banking-frontend
+            docker compose --env-file .env.versions pull core-service
+            docker compose --env-file .env.versions  up -d core-service
