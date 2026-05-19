@@ -38,7 +38,7 @@ export const accounts: Account[] = [
     id: 'acc-main-rub',
     name: 'Основной счёт',
     number: '40817810000000012345',
-    balance: 152340.5,
+    balance: 777340.5,
     currency: 'RUB',
     type: 'debit',
     status: 'active',
