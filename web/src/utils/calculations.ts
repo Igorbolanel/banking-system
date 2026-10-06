@@ -6,6 +6,19 @@ export function toRub(amount: number, currency: CurrencyCode, rates: CurrencyRat
   return rate ? amount * rate.sell : amount;
 }
 
+/**
+ * Пересчёт суммы между валютами по курсам банка (курсы заданы в рублях за единицу).
+ * Банк покупает валюту по курсу buy и продаёт по курсу sell.
+ */
+export function convertAmount(amount: number, from: CurrencyCode, to: CurrencyCode, rates: CurrencyRate[]) {
+  if (from === to) return amount;
+  const fromRate = rates.find((item) => item.code === from);
+  const toRate = rates.find((item) => item.code === to);
+  const inRub = from === 'RUB' ? amount : fromRate ? amount * fromRate.buy : NaN;
+  if (to === 'RUB') return inRub;
+  return toRate ? inRub / toRate.sell : NaN;
+}
+
 export function getTotalBalance(accounts: Account[], rates: CurrencyRate[]) {
   return accounts.filter((account) => account.status === 'active').reduce((sum, account) => sum + toRub(account.balance, account.currency, rates), 0);
 }

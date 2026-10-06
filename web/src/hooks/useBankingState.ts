@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { getDisplayNameByEmail } from '../api/config';
 import { coreApi } from '../api/coreApi';
 import { currencyApi } from '../api/currencyApi';
+import { operationsApi } from '../api/operationsApi';
 import { createBankingStateForEmail } from '../data/mockData';
 import type { Action, Account, BankingState, CurrencyCode, Theme, Transaction } from '../types/banking';
 import { getTotalBalance } from '../utils/calculations';
+import { formatMoney } from '../utils/formatters';
 import {
   isSupportedBackendCurrency,
   isValidExternalAccountNumber,
@@ -30,6 +32,35 @@ export interface Toast {
   text?: string;
 }
 
+export interface PayPayload {
+  accountId: string;
+  title: string;
+  amount: number;
+  category?: string;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : undefined;
+}
+
+/** Сервер ещё без раздела «Операции» — тогда платим обычным списанием. */
+function isMissingEndpoint(error: unknown) {
+  return /404|not found|no static resource/i.test(errorMessage(error) ?? '');
+}
+
+function friendlyAuthError(error: unknown, fallback: string) {
+  const message = errorMessage(error) ?? '';
+  if (/login failed|401|bad credentials/i.test(message)) return 'Неверная почта или пароль.';
+  if (/exist|already|уже зарегистр/i.test(message)) return 'Пользователь с такой почтой уже зарегистрирован.';
+  return message || fallback;
+}
+
+/** Названия счетов, которые дал пользователь, хранятся локально и не теряются после обновления данных. */
+function withNames(accounts: Account[], names: Record<string, string> | undefined) {
+  if (!names) return accounts;
+  return accounts.map((account) => (names[account.id] ? { ...account, name: names[account.id] } : account));
+}
+
 export function useBankingState() {
   const [state, setState] = useState<BankingState>(() => readBankingState());
   const [auth, setAuth] = useState<AuthViewState>({ status: 'checking', email: null, error: null });
@@ -49,7 +80,7 @@ export function useBankingState() {
 
     window.setTimeout(() => {
       setToasts((current) => current.filter((item) => item.id !== toast.id));
-    }, 3600);
+    }, type === 'error' ? 6000 : 3600);
   }
 
   function removeToast(id: string) {
@@ -59,13 +90,13 @@ export function useBankingState() {
   function updateAccountInState(account: Account) {
     setState((current) => ({
       ...current,
-      accounts: replaceAccount(current.accounts, account),
+      accounts: withNames(replaceAccount(current.accounts, account), current.accountNames),
     }));
   }
 
   async function refreshAccounts() {
-    const accounts = await coreApi.getAccounts();
-    setState((current) => ({ ...current, accounts }));
+    const accounts = withNames(await coreApi.getAccounts(), state.accountNames);
+    setState((current) => ({ ...current, accounts: withNames(accounts, current.accountNames) }));
     return accounts;
   }
 
@@ -73,7 +104,7 @@ export function useBankingState() {
     const histories = await Promise.all(
       accounts
         .filter((account) => account.status === 'active')
-        .map((account) => coreApi.getHistory(account).catch(() => [] as Transaction[])),
+        .map((account) => coreApi.getHistory(account, accounts).catch(() => [] as Transaction[])),
     );
     const backendTransactions = histories.flat();
 
@@ -97,7 +128,7 @@ export function useBankingState() {
     }
   }
 
-  async function loadBackendData(showSuccessToast = false, emailOverride?: string | null) {
+  async function loadBackendData(emailOverride?: string | null) {
     const profile = await coreApi.getProfile();
     const profileEmail = profile.email ?? emailOverride ?? auth.email;
 
@@ -107,16 +138,21 @@ export function useBankingState() {
         ...current.profile,
         ...profile,
         email: profileEmail ?? current.profile.email,
-        fullName: getDisplayNameByEmail(profileEmail, current.profile.fullName),
+        fullName: current.profile.fullName || getDisplayNameByEmail(profileEmail, 'Пользователь'),
       },
     }));
 
     await refreshRates();
     const accounts = await refreshAccounts();
     await refreshHistory(accounts);
+  }
 
-    if (showSuccessToast) {
-      notify('success', 'Данные обновлены');
+  /** Перезагрузить счета, курсы и историю (например, после оплаты в разделе «Операции»). */
+  async function refresh() {
+    try {
+      await loadBackendData();
+    } catch (error) {
+      notify('error', 'Не удалось обновить данные', errorMessage(error));
     }
   }
 
@@ -134,7 +170,8 @@ export function useBankingState() {
         }
 
         const sessionEmail = session.email;
-        setState(readBankingState(sessionEmail));
+        const saved = readBankingState(sessionEmail);
+        setState(saved);
         setAuth({ status: 'authenticated', email: sessionEmail, error: null });
 
         const profile = await coreApi.getProfile();
@@ -147,7 +184,7 @@ export function useBankingState() {
             ...current.profile,
             ...profile,
             email: profileEmail ?? current.profile.email,
-            fullName: getDisplayNameByEmail(profileEmail, current.profile.fullName),
+            fullName: current.profile.fullName || getDisplayNameByEmail(profileEmail, 'Пользователь'),
           },
         }));
 
@@ -155,14 +192,14 @@ export function useBankingState() {
         if (cancelled) return;
         setState((current) => ({ ...current, rates }));
 
-        const accounts = await coreApi.getAccounts();
+        const accounts = withNames(await coreApi.getAccounts(), saved.accountNames);
         if (cancelled) return;
         setState((current) => ({ ...current, accounts }));
 
         const histories = await Promise.all(
           accounts
             .filter((account) => account.status === 'active')
-            .map((account) => coreApi.getHistory(account).catch(() => [] as Transaction[])),
+            .map((account) => coreApi.getHistory(account, accounts).catch(() => [] as Transaction[])),
         );
         if (cancelled) return;
 
@@ -193,17 +230,16 @@ export function useBankingState() {
     try {
       await coreApi.login(email, password);
       const session = await coreApi.getAuthState();
+      if (!session.authenticated) {
+        throw new Error('Login failed: 401');
+      }
       const sessionEmail = session.email ?? email;
       setState(readBankingState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
-      await loadBackendData(true, sessionEmail);
-      notify('success', 'Вы вошли в личный кабинет');
+      await loadBackendData(sessionEmail);
+      notify('success', 'Добро пожаловать!', 'Вы вошли в личный кабинет');
     } catch (error) {
-      setAuth({
-        status: 'guest',
-        email: null,
-        error: error instanceof Error ? error.message : 'Не удалось войти. Проверьте почту и пароль.',
-      });
+      setAuth({ status: 'guest', email: null, error: friendlyAuthError(error, 'Не удалось войти. Проверьте почту и пароль.') });
     }
   }
 
@@ -217,14 +253,10 @@ export function useBankingState() {
       const sessionEmail = session.email ?? email;
       setState(readBankingState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
-      await loadBackendData(true, sessionEmail);
-      notify('success', 'Аккаунт создан');
+      await loadBackendData(sessionEmail);
+      notify('success', 'Аккаунт создан', 'Откройте первый счёт, чтобы начать');
     } catch (error) {
-      setAuth({
-        status: 'guest',
-        email: null,
-        error: error instanceof Error ? error.message : 'Не удалось создать аккаунт.',
-      });
+      setAuth({ status: 'guest', email: null, error: friendlyAuthError(error, 'Не удалось создать аккаунт.') });
     }
   }
 
@@ -241,40 +273,58 @@ export function useBankingState() {
   }
 
   function setTheme(theme: Theme) {
+    setState((current) => ({ ...current, profile: { ...current.profile, theme } }));
+  }
+
+  function toggleHideBalance() {
     setState((current) => ({
       ...current,
-      profile: {
-        ...current.profile,
-        theme,
-      },
+      profile: { ...current.profile, hideBalance: !current.profile.hideBalance },
     }));
-    notify('success', theme === 'dark' ? 'Тёмная тема включена' : 'Светлая тема включена');
   }
 
   function updateProfile(payload: Partial<BankingState['profile']>) {
-    setState((current) => ({
-      ...current,
-      profile: {
-        ...current.profile,
-        ...payload,
-      },
-    }));
-    notify('info', 'Профиль обновлён');
+    setState((current) => ({ ...current, profile: { ...current.profile, ...payload } }));
+    notify('success', 'Профиль сохранён');
+  }
+
+  function renameAccount(accountId: string, name: string) {
+    const trimmed = name.trim();
+    setState((current) => {
+      const accountNames = { ...(current.accountNames ?? {}) };
+      if (trimmed) {
+        accountNames[accountId] = trimmed;
+      } else {
+        delete accountNames[accountId];
+      }
+      return {
+        ...current,
+        accountNames,
+        accounts: current.accounts.map((account) =>
+          account.id === accountId && trimmed ? { ...account, name: trimmed } : account,
+        ),
+      };
+    });
   }
 
   async function openAccount(payload: { name: string; currency: CurrencyCode; type: Account['type'] }) {
     if (!isSupportedBackendCurrency(payload.currency)) {
       notify('error', 'Эта валюта сейчас недоступна');
-      return;
+      return false;
     }
 
     try {
       const account = await coreApi.createAccount({ currency: payload.currency, type: payload.type });
-      const namedAccount = payload.name ? { ...account, name: payload.name } : account;
-      updateAccountInState(namedAccount);
-      notify('success', 'Счёт открыт', namedAccount.name);
+      const name = payload.name.trim();
+      updateAccountInState(name ? { ...account, name } : account);
+      if (name) {
+        renameAccount(account.id, name);
+      }
+      notify('success', 'Счёт открыт', name || account.name);
+      return true;
     } catch (error) {
-      notify('error', 'Не удалось открыть счёт', error instanceof Error ? error.message : undefined);
+      notify('error', 'Не удалось открыть счёт', errorMessage(error));
+      return false;
     }
   }
 
@@ -282,23 +332,25 @@ export function useBankingState() {
     const accounts = await refreshAccounts().catch(() => state.accounts);
     const account = accounts.find((item) => item.id === accountId);
     if (account && account.balance > 0) {
-      notify('error', 'Нельзя закрыть счёт с остатком', 'Сначала переведите или снимите деньги');
-      return;
+      notify('error', 'Нельзя закрыть счёт с остатком', 'Сначала переведите деньги на другой счёт');
+      return false;
     }
 
     try {
       await coreApi.closeAccount(accountId);
       await refreshAccounts();
-      notify('info', 'Счёт закрыт');
+      notify('info', 'Счёт закрыт', account?.name);
+      return true;
     } catch (error) {
-      notify('error', 'Не удалось закрыть счёт', error instanceof Error ? error.message : undefined);
+      notify('error', 'Не удалось закрыть счёт', errorMessage(error));
+      return false;
     }
   }
 
   async function topUp(accountId: string, amount: number) {
     if (!amount || amount <= 0) {
-      notify('error', 'Введите корректную сумму');
-      return;
+      notify('error', 'Введите сумму больше нуля');
+      return false;
     }
 
     try {
@@ -306,7 +358,7 @@ export function useBankingState() {
       const account = accounts.find((item) => item.id === accountId);
       if (!account) {
         notify('error', 'Счёт не найден');
-        return;
+        return false;
       }
 
       const updatedAccount = await coreApi.deposit(account.id, amount);
@@ -314,16 +366,18 @@ export function useBankingState() {
 
       const freshAccounts = await refreshAccounts();
       await refreshHistory(freshAccounts);
-      notify('success', 'Счёт пополнен');
+      notify('success', 'Счёт пополнен', `+${formatMoney(amount, account.currency)} на «${account.name}»`);
+      return true;
     } catch (error) {
-      notify('error', 'Пополнение не выполнено', error instanceof Error ? error.message : undefined);
+      notify('error', 'Пополнение не выполнено', errorMessage(error));
+      return false;
     }
   }
 
   async function transfer(payload: { fromAccountId: string; toAccountNumber: string; amount: number; transferMode?: string }) {
     if (!payload.amount || payload.amount <= 0 || payload.toAccountNumber.trim().length < 1) {
       notify('error', 'Проверьте данные перевода');
-      return;
+      return false;
     }
 
     try {
@@ -332,12 +386,12 @@ export function useBankingState() {
       const account = accounts.find((item) => item.id === payload.fromAccountId);
       if (!account) {
         notify('error', 'Счёт отправителя не найден');
-        return;
+        return false;
       }
 
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
-        return;
+        return false;
       }
 
       const rawRecipientNumber = payload.toAccountNumber.trim();
@@ -353,15 +407,15 @@ export function useBankingState() {
 
         if (!recipientAccount) {
           notify('error', 'Счёт получателя не найден');
-          return;
+          return false;
         }
 
         recipientAccountNumber = recipientAccount.number.replace(/\s/g, '');
       }
 
       if (!isValidExternalAccountNumber(recipientAccountNumber)) {
-        notify('error', 'Введите корректный номер счёта получателя');
-        return;
+        notify('error', 'Номер счёта должен состоять из 20 цифр');
+        return false;
       }
 
       await coreApi.transfer({
@@ -373,16 +427,18 @@ export function useBankingState() {
 
       const freshAccounts = await refreshAccounts();
       await refreshHistory(freshAccounts);
-      notify('success', 'Перевод отправлен', `Получатель: ${recipientAccountNumber}`);
+      notify('success', 'Перевод отправлен', `${formatMoney(payload.amount, account.currency)} на счёт •${recipientAccountNumber.slice(-4)}`);
+      return true;
     } catch (error) {
-      notify('error', 'Перевод не выполнен', error instanceof Error ? error.message : undefined);
+      notify('error', 'Перевод не выполнен', errorMessage(error));
+      return false;
     }
   }
 
-  async function pay(payload: { accountId: string; title: string; amount: number }) {
+  async function pay(payload: PayPayload) {
     if (!payload.amount || payload.amount <= 0) {
       notify('error', 'Проверьте данные платежа');
-      return;
+      return false;
     }
 
     try {
@@ -390,33 +446,48 @@ export function useBankingState() {
       const account = accounts.find((item) => item.id === payload.accountId);
       if (!account) {
         notify('error', 'Счёт не найден');
-        return;
+        return false;
       }
 
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
-        return;
+        return false;
       }
 
-      const updatedAccount = await coreApi.withdraw(account.id, payload.amount);
-      updateAccountInState(updatedAccount);
+      try {
+        await operationsApi.createPayment({
+          accountId: account.id,
+          amount: payload.amount,
+          merchant: payload.title,
+          category: payload.category,
+        });
+      } catch (error) {
+        if (!isMissingEndpoint(error)) {
+          throw error;
+        }
+        const updatedAccount = await coreApi.withdraw(account.id, payload.amount);
+        updateAccountInState(updatedAccount);
+      }
+
       const freshAccounts = await refreshAccounts();
       await refreshHistory(freshAccounts);
-      notify('success', 'Платёж выполнен');
+      notify('success', 'Оплата прошла', `${payload.title}: ${formatMoney(payload.amount, account.currency)}`);
+      return true;
     } catch (error) {
-      notify('error', 'Платёж не выполнен', error instanceof Error ? error.message : undefined);
+      notify('error', 'Платёж не выполнен', errorMessage(error));
+      return false;
     }
   }
 
   async function exchange(payload: { fromAccountId: string; toCurrency: CurrencyCode; amount: number }) {
     if (!payload.amount || payload.amount <= 0) {
       notify('error', 'Проверьте параметры обмена');
-      return;
+      return false;
     }
 
     if (!isSupportedBackendCurrency(payload.toCurrency)) {
       notify('error', 'Эта валюта сейчас недоступна');
-      return;
+      return false;
     }
 
     try {
@@ -425,17 +496,17 @@ export function useBankingState() {
       const account = accounts.find((item) => item.id === payload.fromAccountId);
       if (!account) {
         notify('error', 'Счёт списания не найден');
-        return;
+        return false;
       }
 
       if (account.currency === payload.toCurrency) {
         notify('error', 'Выберите другую валюту');
-        return;
+        return false;
       }
 
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
-        return;
+        return false;
       }
 
       let targetAccount = accounts.find(
@@ -462,53 +533,50 @@ export function useBankingState() {
 
       const freshAccounts = await refreshAccounts();
       await refreshHistory(freshAccounts);
-      notify('success', 'Обмен выполнен', `Зачислено примерно ${result.result.toFixed(2)} ${payload.toCurrency}`);
+      notify('success', 'Обмен выполнен', `Зачислено около ${formatMoney(Number(result.result.toFixed(2)), payload.toCurrency)}`);
+      return true;
     } catch (error) {
-      notify('error', 'Обмен не выполнен', error instanceof Error ? error.message : undefined);
+      notify('error', 'Обмен не выполнен', errorMessage(error));
+      return false;
     }
   }
 
   async function submitAction(action: Action, payload: Record<string, string | number>) {
     if (action === 'openAccount') {
-      await openAccount({
-        name: String(payload.name || 'Новый счёт'),
+      return openAccount({
+        name: String(payload.name || ''),
         currency: String(payload.currency || 'RUB') as CurrencyCode,
         type: String(payload.type || 'debit') as Account['type'],
       });
-      return;
     }
 
     if (action === 'topup') {
-      await topUp(String(payload.accountId), Number(payload.amount));
-      return;
+      return topUp(String(payload.accountId), Number(payload.amount));
     }
 
     if (action === 'transfer') {
-      await transfer({
+      return transfer({
         fromAccountId: String(payload.accountId),
         toAccountNumber: String(payload.toAccountNumber),
         amount: Number(payload.amount),
         transferMode: String(payload.transferMode || 'own'),
       });
-      return;
     }
 
     if (action === 'pay') {
-      await pay({
+      return pay({
         accountId: String(payload.accountId),
         title: String(payload.title || 'Оплата услуг'),
         amount: Number(payload.amount),
+        category: payload.category ? String(payload.category) : undefined,
       });
-      return;
     }
 
-    if (action === 'exchange') {
-      await exchange({
-        fromAccountId: String(payload.accountId),
-        toCurrency: String(payload.toCurrency || 'USD') as CurrencyCode,
-        amount: Number(payload.amount),
-      });
-    }
+    return exchange({
+      fromAccountId: String(payload.accountId),
+      toCurrency: String(payload.toCurrency || 'USD') as CurrencyCode,
+      amount: Number(payload.amount),
+    });
   }
 
   const summary = useMemo(
@@ -530,8 +598,11 @@ export function useBankingState() {
     login,
     register,
     logout,
+    refresh,
     setTheme,
+    toggleHideBalance,
     updateProfile,
+    renameAccount,
     openAccount,
     closeAccount,
     topUp,

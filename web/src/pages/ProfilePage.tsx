@@ -1,107 +1,149 @@
 import { useState } from 'react';
-import type { CashbackCategory, SavingGoal, UserProfile } from '../types/banking';
-import { formatMoney } from '../utils/formatters';
+
+import { UiIcon } from '../components/operations/Icon';
+import type { Theme, UserProfile } from '../types/banking';
+import { getInitials, pluralize } from '../utils/formatters';
 
 interface ProfilePageProps {
   profile: UserProfile;
-  goals: SavingGoal[];
-  cashbackCategories: CashbackCategory[];
+  accountsCount: number;
   onUpdate: (payload: Partial<UserProfile>) => void;
+  onThemeChange: (theme: Theme) => void;
+  onToggleBalance: () => void;
+  onLogout: () => void;
 }
 
-interface ProfileFormProps {
-  profile: UserProfile;
-  onUpdate: (payload: Partial<UserProfile>) => void;
-}
-
-function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
+function ProfileForm({ profile, onUpdate }: Pick<ProfilePageProps, 'profile' | 'onUpdate'>) {
   const [name, setName] = useState(profile.fullName);
   const [phone, setPhone] = useState(profile.phone);
   const [city, setCity] = useState(profile.city);
 
+  const phoneDigits = phone.replace(/\D/g, '');
+  const phoneError = phone && (phoneDigits.length < 10 || phoneDigits.length > 12) ? 'Введите номер полностью, например +7 900 123-45-67' : '';
+  const nameError = !name.trim() ? 'Имя не может быть пустым' : '';
+  const dirty = name !== profile.fullName || phone !== profile.phone || city !== profile.city;
 
   return (
-    <div className="form form--page">
-      <label>
-        Имя
-        <input value={name} onChange={(event) => setName(event.target.value)} />
+    <div className="form">
+      <label className="field">
+        <span className="field__label">Как к вам обращаться</span>
+        <input className={`input${nameError ? ' is-invalid' : ''}`} value={name} maxLength={60} onChange={(event) => setName(event.target.value)} />
+        {nameError && <p className="error-text">{nameError}</p>}
       </label>
-      <label>
-        Телефон
-        <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Не указан" />
+      <label className="field">
+        <span className="field__label">Телефон</span>
+        <input className={`input${phoneError ? ' is-invalid' : ''}`} inputMode="tel" value={phone} placeholder="+7 900 123-45-67" onChange={(event) => setPhone(event.target.value)} />
+        {phoneError && <p className="error-text">{phoneError}</p>}
       </label>
-      <label>
-        Город
-        <input value={city} onChange={(event) => setCity(event.target.value)} placeholder="Не указан" />
+      <label className="field">
+        <span className="field__label">Город</span>
+        <input className="input" value={city} maxLength={60} placeholder="Например, Москва" onChange={(event) => setCity(event.target.value)} />
       </label>
-      <button className="button-primary" onClick={() => onUpdate({ fullName: name, phone, city })}>Сохранить</button>
+      <div>
+        <button
+          type="button"
+          className="btn btn--primary"
+          disabled={!dirty || Boolean(phoneError) || Boolean(nameError)}
+          onClick={() => onUpdate({ fullName: name.trim(), phone: phone.trim(), city: city.trim() })}
+        >
+          Сохранить изменения
+        </button>
+      </div>
     </div>
   );
 }
 
-function ProfilePage({ profile, goals, cashbackCategories, onUpdate }: ProfilePageProps) {
-  const profileFormKey = `${profile.email}-${profile.fullName}-${profile.phone}-${profile.city}`;
-
+function ProfilePage({ profile, accountsCount, onUpdate, onThemeChange, onToggleBalance, onLogout }: ProfilePageProps) {
+  const formKey = `${profile.email}-${profile.fullName}-${profile.phone}-${profile.city}`;
 
   return (
-    <div className="page-grid">
-      <section className="page-hero">
-        <div>
-          <p className="eyebrow">профиль</p>
-          <h2>{profile.fullName || 'Пользователь'}</h2>
-          <p>Личные данные аккаунта и настройки кабинета.</p>
+    <div className="page">
+      <section className="card">
+        <div className="profile-head">
+          <span className="avatar avatar--lg">{getInitials(profile.fullName)}</span>
+          <div>
+            <h2>{profile.fullName || 'Пользователь'}</h2>
+            <span className="muted">{profile.email}</span>
+            <div className="chips" style={{ marginTop: 8 }}>
+              <span className="badge badge--brand">{profile.role === 'admin' ? 'Администратор' : 'Клиент банка'}</span>
+              <span className="badge">
+                {accountsCount} {pluralize(accountsCount, 'активный счёт', 'активных счёта', 'активных счетов')}
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="content__row">
+      <div className="dash-grid">
         <section className="card">
-          <h2>Данные</h2>
-          <div className="profile-list">
-            <div><span>Email</span><strong>{profile.email || 'Не указан'}</strong></div>
-            <div><span>Телефон</span><strong>{profile.phone || 'Не указан'}</strong></div>
-            <div><span>Город</span><strong>{profile.city || 'Не указан'}</strong></div>
-            <div><span>Статус</span><strong>{profile.role === 'admin' ? 'Администратор' : 'Пользователь'}</strong></div>
+          <div className="card__head">
+            <h2>Личные данные</h2>
           </div>
-          <ProfileForm key={profileFormKey} profile={profile} onUpdate={onUpdate} />
+          <ProfileForm key={formKey} profile={profile} onUpdate={onUpdate} />
         </section>
 
-        <section className="card">
-          <h2>Цели</h2>
-          {goals.length === 0 ? (
-            <p className="empty-text">Цели пока не добавлены.</p>
-          ) : (
-            <div className="goal-list">
-              {goals.map((goal) => (
-                <div key={goal.id} className="goal-card">
-                  <span className="goal-card__icon">{goal.icon}</span>
-                  <div>
-                    <strong>{goal.title}</strong>
-                    <span>{formatMoney(goal.saved, goal.currency)} из {formatMoney(goal.target, goal.currency)}</span>
-                    <div className="progress"><span style={{ width: `${Math.min(100, (goal.saved / goal.target) * 100)}%` }} /></div>
-                  </div>
-                </div>
-              ))}
+        <div className="page">
+          <section className="card">
+            <div className="card__head">
+              <h2>Настройки</h2>
             </div>
-          )}
-        </section>
-      </div>
-
-      <section className="card">
-        <h2>Кэшбэк</h2>
-        {cashbackCategories.length === 0 ? (
-          <p className="empty-text">Категории кэшбэка пока не выбраны.</p>
-        ) : (
-          <div className="cashback-grid">
-            {cashbackCategories.map((item) => (
-              <div key={item.id} className={`cashback-card ${item.selected ? 'cashback-card--selected' : ''}`}>
-                <span>{item.icon}</span>
-                <strong>{item.title}</strong>
-                <p>{item.percent}%</p>
+            <div className="settings">
+              <div className="setting">
+                <span className="setting__text">
+                  <strong>Тема оформления</strong>
+                  <span>Тёмная удобнее вечером</span>
+                </span>
+                <div className="segmented" role="radiogroup" aria-label="Тема">
+                  <button type="button" role="radio" aria-checked={profile.theme === 'light'} className={profile.theme === 'light' ? 'is-active' : undefined} onClick={() => onThemeChange('light')}>
+                    Светлая
+                  </button>
+                  <button type="button" role="radio" aria-checked={profile.theme === 'dark'} className={profile.theme === 'dark' ? 'is-active' : undefined} onClick={() => onThemeChange('dark')}>
+                    Тёмная
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <div className="setting">
+                <span className="setting__text">
+                  <strong>Скрывать баланс на главной</strong>
+                  <span>Суммы откроются по нажатию на значок глаза</span>
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={Boolean(profile.hideBalance)}
+                  aria-label="Скрывать баланс на главной"
+                  className={`switch${profile.hideBalance ? ' is-on' : ''}`}
+                  onClick={onToggleBalance}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="card__head">
+              <h2>Безопасность</h2>
+            </div>
+            <dl className="facts">
+              <div>
+                <dt>Вход</dt>
+                <dd>По почте и паролю</dd>
+              </div>
+              <div>
+                <dt>Сессия</dt>
+                <dd>Хранится на сервере</dd>
+              </div>
+              <div>
+                <dt>Защита запросов</dt>
+                <dd>CSRF-токен</dd>
+              </div>
+            </dl>
+            <button type="button" className="btn btn--danger" style={{ marginTop: 16 }} onClick={onLogout}>
+              <UiIcon name="logout" size={18} />
+              Выйти из аккаунта
+            </button>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

@@ -103,13 +103,19 @@ export function makeDisplayAccountNumber(id: string | number) {
   return `40817${safeId.padStart(15, '0').slice(-15)}`;
 }
 
+const CURRENCY_IN: Record<CurrencyCode, string> = { RUB: 'в рублях', USD: 'в долларах', EUR: 'в евро' };
+
+export function defaultAccountName(type: Account['type'], currency: CurrencyCode) {
+  return `${type === 'saving' ? 'Накопительный' : 'Текущий'} счёт ${CURRENCY_IN[currency] ?? currency}`;
+}
+
 export function mapAccount(account: BackendAccount): Account {
   const type = fromBackendAccountType(account.type);
   const currency = account.currency as CurrencyCode;
 
   return {
     id: String(account.id),
-    name: `${currency} ${type === 'saving' ? 'накопительный' : 'текущий'} счёт`,
+    name: defaultAccountName(type, currency),
     number: account.accountNumber ?? makeDisplayAccountNumber(account.id),
     balance: Number(account.balance ?? 0),
     currency,
@@ -120,14 +126,17 @@ export function mapAccount(account: BackendAccount): Account {
   };
 }
 
-export function mapTransaction(transaction: BackendTransaction, account: Account): Transaction {
+export function mapTransaction(transaction: BackendTransaction, account: Account, ownAccounts: Account[] = []): Transaction {
   const isOutgoing = String(transaction.fromAccountId ?? '') === account.id;
   const isIncoming = String(transaction.toAccountId ?? '') === account.id;
+  const counterpartyId = String((isOutgoing ? transaction.toAccountId : transaction.fromAccountId) ?? '');
+  const ownCounterparty = ownAccounts.find((item) => item.id === counterpartyId);
+  const isExchange = Boolean(ownCounterparty && ownCounterparty.currency !== account.currency);
   const type: Transaction['type'] =
-    transaction.type === 'DEPOSIT'
+    transaction.type === 'DEPOSIT' || transaction.type === 'INTEREST'
       ? 'income'
       : transaction.type === 'TRANSFER'
-        ? 'transfer'
+        ? isExchange ? 'exchange' : 'transfer'
         : 'outcome';
 
   const displayedAmount = Number(
@@ -135,6 +144,7 @@ export function mapTransaction(transaction: BackendTransaction, account: Account
       ? transaction.convertedAmount ?? transaction.amount ?? 0
       : transaction.amount ?? 0,
   );
+  // Проценты раньше показывались со знаком минус — теперь это доход
   const sign = type === 'income' || (transaction.type === 'TRANSFER' && isIncoming) ? 1 : -1;
   const amount = displayedAmount * sign;
 
@@ -142,22 +152,28 @@ export function mapTransaction(transaction: BackendTransaction, account: Account
     id: `${transaction.id}-${account.id}`,
     title:
       transaction.type === 'TRANSFER'
-        ? isOutgoing
-          ? `Перевод на счёт ${transaction.toAccountId}`
-          : `Перевод со счёта ${transaction.fromAccountId}`
+        ? isExchange
+          ? 'Обмен валюты'
+          : ownCounterparty
+            ? isOutgoing
+              ? `Перевод на «${ownCounterparty.name}»`
+              : `Перевод с «${ownCounterparty.name}»`
+            : isOutgoing
+              ? 'Перевод клиенту МИК Банка'
+              : 'Перевод от клиента МИК Банка'
         : transaction.type === 'DEPOSIT'
           ? 'Пополнение счёта'
           : transaction.type === 'INTEREST'
-            ? 'Начисление процентов'
-            : 'Оплата или списание',
+            ? 'Проценты на остаток'
+            : 'Списание со счёта',
     category:
       transaction.type === 'TRANSFER'
-        ? 'Переводы'
+        ? isExchange ? 'Обмен валюты' : 'Переводы'
         : transaction.type === 'DEPOSIT'
           ? 'Пополнения'
           : transaction.type === 'INTEREST'
-            ? 'Накопления'
-            : 'Платежи',
+            ? 'Проценты'
+            : 'Списания',
     amount,
     currency: account.currency,
     createdAt: transaction.createdAt,
@@ -276,11 +292,11 @@ export const coreApi = {
     });
   },
 
-  async getHistory(account: Account): Promise<Transaction[]> {
+  async getHistory(account: Account, ownAccounts: Account[] = []): Promise<Transaction[]> {
     await this.requireSession();
     const history = await request<BackendTransaction[]>(
       `${API_URLS.core}/api/transfers/history?accountId=${encodeURIComponent(account.id)}`,
     );
-    return (history ?? []).map((item) => mapTransaction(item, account));
+    return (history ?? []).map((item) => mapTransaction(item, account, ownAccounts));
   },
 };
