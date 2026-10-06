@@ -1,4 +1,7 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+
+import { UiIcon } from '../components/operations/Icon';
 
 type AuthMode = 'login' | 'register';
 
@@ -9,43 +12,34 @@ interface AuthPageProps {
   onRegister: (email: string, password: string) => Promise<void>;
 }
 
+const FEATURES = [
+  { icon: 'wallet', title: 'Счета в рублях, долларах и евро', text: 'Текущие и накопительные — с процентами на остаток' },
+  { icon: 'transfer', title: 'Переводы и обмен валюты', text: 'Между своими счетами и другим клиентам по номеру счёта' },
+  { icon: 'receipt', title: 'Аналитика трат', text: 'Поиск по операциям и диаграммы по категориям' },
+];
+
 function AuthPage({ loading = false, error, onLogin, onRegister }: AuthPageProps) {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const isRegister = mode === 'register';
 
-  const title = useMemo(
-    () => (isRegister ? 'Создайте аккаунт' : 'Войдите в МИК Банк'),
-    [isRegister],
-  );
-
-  const subtitle = useMemo(
-    () =>
-      isRegister
-        ? 'Укажите почту и пароль, чтобы открыть новый личный кабинет.'
-        : 'Введите данные своего аккаунта для входа в личный кабинет.',
-    [isRegister],
-  );
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLocalError(null);
-
     const normalizedEmail = email.trim();
 
     if (!normalizedEmail || !password) {
       setLocalError('Введите почту и пароль.');
       return;
     }
-
-    if (!normalizedEmail.includes('@')) {
-      setLocalError('Введите корректную почту.');
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setLocalError('Проверьте почту: в ней должны быть «@» и домен, например name@mail.ru.');
       return;
     }
-
     if (password.length < 8) {
       setLocalError('Пароль должен быть не короче 8 символов.');
       return;
@@ -63,114 +57,99 @@ function AuthPage({ loading = false, error, onLogin, onRegister }: AuthPageProps
     setLocalError(null);
   }
 
+  const message = localError || error;
+
   return (
-    <main className="auth-shell">
-      <div className="auth-layout">
-        <section className="auth-hero" aria-label="МИК Банк">
-          <div className="auth-hero__top">
-            <div className="auth-brand">
-              <div className="auth-brand__logo">М</div>
+    <main className="auth">
+      <section className="auth__brand" aria-label="МИК Банк">
+        <div className="auth__logo">
+          <span>М</span>
+          <span>МИК Банк</span>
+        </div>
+        <div>
+          <h1 className="auth__headline">Счета, переводы и валюта в одном кабинете</h1>
+          <p className="auth__lead">Откройте счёт за минуту, переводите деньги и следите за тратами по категориям.</p>
+        </div>
+        <ul className="auth__features">
+          {FEATURES.map((feature) => (
+            <li key={feature.title}>
+              <span>
+                <UiIcon name={feature.icon} size={20} />
+              </span>
               <div>
-                <strong>МИК Банк</strong>
-                <span>личный кабинет</span>
+                <strong>{feature.title}</strong>
+                <small>{feature.text}</small>
               </div>
-            </div>
-          </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-          <div className="auth-hero__content">
-            <p className="auth-hero__eyebrow">онлайн-банк</p>
+      <section className="auth__panel" aria-label={isRegister ? 'Регистрация' : 'Вход'}>
+        <div className="segmented segmented--block" role="tablist" aria-label="Вход или регистрация">
+          <button type="button" role="tab" aria-selected={!isRegister} className={!isRegister ? 'is-active' : undefined} onClick={() => switchMode('login')} disabled={loading}>
+            Вход
+          </button>
+          <button type="button" role="tab" aria-selected={isRegister} className={isRegister ? 'is-active' : undefined} onClick={() => switchMode('register')} disabled={loading}>
+            Регистрация
+          </button>
+        </div>
 
-            <h1 className="auth-hero__title">
-              Управляйте счетами
-              <br />
-              просто и удобно
-            </h1>
+        <div>
+          <h2>{isRegister ? 'Создайте аккаунт' : 'Вход в личный кабинет'}</h2>
+          <p>{isRegister ? 'Почта и пароль — больше ничего не нужно.' : 'Введите почту и пароль, указанные при регистрации.'}</p>
+        </div>
 
-            <p className="auth-hero__subtitle">
-              В одном кабинете доступны счета, переводы, операции и работа с валютой.
-              После регистрации вы получаете новый пустой личный кабинет.
-            </p>
+        <form className="form" onSubmit={handleSubmit} noValidate>
+          <label className="field">
+            <span className="field__label">Почта</span>
+            <input
+              className="input"
+              type="email"
+              autoComplete="email"
+              value={email}
+              placeholder="name@mail.ru"
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={loading}
+            />
+          </label>
 
-            <div className="auth-hero__features">
-              <article className="auth-feature-card">
-                <span className="auth-feature-card__label">Счета</span>
-                <strong>Открытие и управление</strong>
-                <p>Создавайте счета, просматривайте баланс и выполняйте основные операции.</p>
-              </article>
-
-              <article className="auth-feature-card">
-                <span className="auth-feature-card__label">Переводы</span>
-                <strong>Быстрые операции</strong>
-                <p>Переводите деньги между своими счетами и отслеживайте историю операций.</p>
-              </article>
-
-              <article className="auth-feature-card">
-                <span className="auth-feature-card__label">Валюта</span>
-                <strong>RUB · USD · EUR</strong>
-                <p>Работайте с основными валютами и выполняйте обмен внутри кабинета.</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section className="auth-panel" aria-label="Авторизация">
-          <div className="auth-panel__top">
-            <span className="auth-badge">Безопасный вход</span>
-            <h2>{title}</h2>
-            <p>{subtitle}</p>
-          </div>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
-              <span>Почта</span>
+          <label className="field">
+            <span className="field__label">Пароль</span>
+            <span className="password-field">
               <input
-                type="email"
-                autoComplete="email"
-                value={email}
-                placeholder="Введите почту"
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={loading}
-              />
-            </label>
-
-            <label>
-              <span>Пароль</span>
-              <input
-                type="password"
+                className="input"
+                type={showPassword ? 'text' : 'password'}
                 autoComplete={isRegister ? 'new-password' : 'current-password'}
                 value={password}
-                placeholder="Введите пароль"
+                placeholder={isRegister ? 'Не короче 8 символов' : 'Ваш пароль'}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={loading}
               />
-            </label>
+              <button
+                type="button"
+                className="icon-btn icon-btn--plain"
+                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                <UiIcon name={showPassword ? 'eyeOff' : 'eye'} size={18} />
+              </button>
+            </span>
+          </label>
 
-            {(localError || error) && <div className="auth-error">{localError || error}</div>}
+          {message && (
+            <div className="form-error" role="alert">
+              {message}
+            </div>
+          )}
 
-            <button className="auth-submit" type="submit" disabled={loading}>
-              {loading ? 'Подождите…' : isRegister ? 'Создать аккаунт' : 'Войти'}
-            </button>
-          </form>
+          <button className="btn btn--brand btn--block" style={{ height: 52 }} type="submit" disabled={loading}>
+            {loading ? 'Подождите…' : isRegister ? 'Создать аккаунт' : 'Войти'}
+          </button>
+        </form>
 
-          <div className="auth-switch">
-            {isRegister ? (
-              <>
-                Уже есть аккаунт?{' '}
-                <button type="button" onClick={() => switchMode('login')} disabled={loading}>
-                  Войти
-                </button>
-              </>
-            ) : (
-              <>
-                Нет аккаунта?{' '}
-                <button type="button" onClick={() => switchMode('register')} disabled={loading}>
-                  Создать
-                </button>
-              </>
-            )}
-          </div>
-        </section>
-      </div>
+        <p className="auth__note">Учебный проект: используйте любую почту, реальные данные не нужны.</p>
+      </section>
     </main>
   );
 }
